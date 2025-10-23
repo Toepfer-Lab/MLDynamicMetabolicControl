@@ -57,4 +57,6 @@ def hybrid_ode(t, z, vman_func, model_nn, x_scaler, y_scaler):
         rate * v_bio     # d(biomass)/dt
     ]
 
+    dzdt[z <= 0] = np.maximum(dzdt[z <= 0], 0)
+
     return dzdt
