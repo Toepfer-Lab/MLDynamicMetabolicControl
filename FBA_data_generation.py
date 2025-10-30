@@ -1,4 +1,5 @@
 import numpy as np
+import os
 
 def generate_fba_data(model, vman, file_path=None):
     """
@@ -68,6 +69,7 @@ def generate_fba_data(model, vman, file_path=None):
             Y.append(y)
     
     if file_path != None:
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
         np.savez_compressed(file_path, 
                     X=np.array(X), 
                     Y=np.array(Y), 
