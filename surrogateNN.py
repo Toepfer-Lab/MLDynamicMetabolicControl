@@ -174,7 +174,7 @@ def train_model(model, X_train, Y_train, X_val, Y_val,
         # Early stopping logic
         if loss_val.item() < best_val_loss:
             best_val_loss = loss_val.item()
-            best_model_state = model.state_dict()
+            best_model_state = {k: v.clone() for k, v in model.state_dict().items()}    #create a clone of the best model state to avoid direct references to the model
             epochs_no_improve = 0
         else:
             epochs_no_improve += 1
@@ -189,3 +189,5 @@ def train_model(model, X_train, Y_train, X_val, Y_val,
         model.load_state_dict(best_model_state)
 
     return model, train_losses, val_losses
+
+
