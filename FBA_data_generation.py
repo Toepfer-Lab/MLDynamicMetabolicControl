@@ -30,6 +30,7 @@ def generate_fba_data(model, vman, file_path=None):
 
     # Create a range of vman values
     vman_values = np.linspace(rxn.lower_bound, rxn.upper_bound, 1000)
+    print(f"upper bound: {rxn.lower_bound}. lower bound: {rxn.upper_bound}")
 
     feasibility_dict = {}  # Tracks whether each vman value is feasible
     X, Y = [], []          # Feasible data points for training
