@@ -1,7 +1,7 @@
 import numpy as np
 import os
 
-def generate_fba_data(model, vman, file_path=None):
+def generate_fba_data(model, vman, file_path=None, n_samples=1000):
     """
     Generate steady-state FBA data for a given control flux (vman).
 
@@ -28,55 +28,57 @@ def generate_fba_data(model, vman, file_path=None):
     """
     rxn = model.reactions.get_by_id(vman)
 
-    # Create a range of vman values
-    vman_values = np.linspace(rxn.lower_bound, rxn.upper_bound, 1000)
-    print(f"upper bound: {rxn.lower_bound}. lower bound: {rxn.upper_bound}")
-
+    # STEP 1
+    # Do a coarse sweep of vman in order to identify feasible regions
+    coarse_values = np.linspace(rxn.lower_bound, rxn.upper_bound, 200)
     feasibility_dict = {}  # Tracks whether each vman value is feasible
-    X, Y = [], []          # Feasible data points for training
+    feasible_points = []
 
-    # Sweep through all vman values
-    for v in vman_values:
-        try:
-            # Fix the flux value for the controlled reaction
-            rxn.bounds = (v, v)
-        except Exception:
-            # If COBRA refuses the bound (e.g. inconsistent), mark as infeasible
-            feasibility_dict[v] = False
-            continue
-
-        # Solve the FBA problem
+    for v in coarse_values:
+        rxn.bounds = (v, v)
         solution = model.optimize()
+        feasible = solution.status == "optimal"
+        feasibility_dict[v] = feasible
+        if feasible:
+            feasible_points.append(v)
 
-        # Record feasibility
-        is_feasible = solution.status == "optimal"
-        feasibility_dict[v] = is_feasible
+    if not feasible_points:
+        raise RuntimeError(f"No feasible steady states found for {vman}")
+        
+    # next we identify the feasible region
+    # assuming that there is only one continous region with upper and lower limit
+    feasible_min, feasible_max = min(feasible_points), max(feasible_points)
+    print(f"Feasible region for {vman}: [{feasible_min:.2f}, {feasible_max:.2f}]")
 
-        # Save data only if feasible
-        if is_feasible:
-            x = [v]
-            y = [
-                solution.fluxes.get("EX_etoh_e", 0.0),          # Ethanol exchange
-                solution.fluxes.get("EX_glc__D_e", 0.0),        # Glucose exchange
-                solution.fluxes.get("EX_co2_e", 0.0),           # CO2 exchange
-                solution.fluxes.get("Biomass_Ecoli_core", 0.0), # Biomass
-                # solution.fluxes.get("EX_ac_e"), # Acetate exchange
-                # solution.fluxes.get("EX_h_e"), # H+ exchange
-                # solution.fluxes.get("EX_h2o_e"), # H2O exchange
-                # solution.fluxes.get("EX_lac__D_e"), # D-lactate exchange
-                # solution.fluxes.get("EX_succ_e"), # Succinate exchange
-            ]
-            X.append(x)
-            Y.append(y)
+    # STEP 2
+    # now we sample with n_samples within our feasible region
+    # this way we keep a consistent training point number across potentially different vman fluxes
+
+    # Create a range of vman values
+    vman_values = np.linspace(feasible_min, feasible_max, n_samples)
+    feasible_range = (feasible_min, feasible_max)
+    X, Y = [], []    #save data points in these lists
+
+    for v in vman_values:
+        rxn.bounds = (v, v)
+        solution = model.optimize()
+        if solution.status == "optimal":
+            X.append([v])
+            Y.append([
+                solution.fluxes.get("EX_etoh_e", 0.0),
+                solution.fluxes.get("EX_glc__D_e", 0.0),
+                solution.fluxes.get("EX_co2_e", 0.0),
+                solution.fluxes.get("Biomass_Ecoli_core", 0.0),
+            ])
     
-    if file_path != None:
+    if file_path is not None:
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
         np.savez_compressed(file_path, 
                     X=np.array(X), 
                     Y=np.array(Y), 
-                    feasibility_dict=feasibility_dict)
-
-    return X, Y, feasibility_dict
+                    feasible_range = feasible_range
+                    )
+    return X, Y, feasible_range
 
 def list_infeasible_regions(feasibility_dict, rxn_id="PFK"):
     """
