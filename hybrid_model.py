@@ -50,13 +50,14 @@ def hybrid_ode(t, z, vman_func, model_nn, x_scaler, y_scaler):
 
     # Dynamic rate scaling (e.g., Michaelis-Menten / biomass-based)
     rate = biomass * h(z)
+    print(f"rate: {rate}, h(z): {h(z)}, biomass: {biomass}")
 
     # Derivatives (glucose is consumed → negative)
-    dzdt = [
+    dzdt = np.array([
         rate * v_glc,   # d(glucose)/dt
         rate * v_etoh,   # d(ethanol)/dt
         rate * v_bio     # d(biomass)/dt
-    ]
+    ])
 
     dzdt[z <= 0] = np.maximum(dzdt[z <= 0], 0)
 
