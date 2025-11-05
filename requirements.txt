@@ -1,0 +1,19 @@
+numpy>=1.24,<2
+scipy>=1.10,<2
+matplotlib>=3.7,<4
+scikit-learn>=1.2,<2
+torch>=2.0.1
+cobra
+jupyter
+
+# Notes:
+# - PyTorch (torch) installation may require choosing CPU vs CUDA builds. If you need CUDA
+#   support, follow instructions at https://pytorch.org/ to install the correct package for
+#   your CUDA version (pip/conda install recommendations). The plain `torch` line above
+#   will install the default CPU build on many systems; to get a CUDA-enabled build, use
+#   the command recommended on PyTorch's website.
+# - To install in a fresh virtualenv using pip:
+#     python -m venv .venv
+#     source .venv/bin/activate
+#     pip install --upgrade pip
+#     pip install -r requirements.txt
