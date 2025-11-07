@@ -55,13 +55,10 @@ def optimize_vman(model, hybrid_ode, z0, t_span, N, t_eval_points, bounds, x_sca
 
     def simulate(vman_values):
         def vman_t(t):
-            print(f"current vman: {vman_values}")
-            idx = np.searchsorted(control_times, t, side='right') - 1
-            print(f"first step: {idx}, t: {t}")
-            idx = np.clip(idx, 0 , N - 1)
-            print(f"second step: {idx}, return: {vman_values[idx]}")
-            print("\n")
-            return vman_values[idx]
+            print(f"control_times: {control_times}, vman_values: {vman_values}")
+            interpol = np.interp(t, control_times[1:], vman_values)
+            print(f"interpol: {interpol}")
+            return interpol
         
 
         def rhs(t, z):
@@ -90,7 +87,7 @@ def optimize_vman(model, hybrid_ode, z0, t_span, N, t_eval_points, bounds, x_sca
     
     result = minimize(
         cost, 
-        x0=np.ones(N)*5,
+        x0=np.ones(N)*10,
         bounds=bounds,
         method='L-BFGS-B',
         options={'eps': 1e-1, 'maxiter': 1000, 'ftol': 1e-8}
