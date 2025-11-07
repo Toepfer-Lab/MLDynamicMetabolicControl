@@ -10,6 +10,8 @@ def objective_fn(sol):
 
 def optimize_vman(model, hybrid_ode, z0, t_span, N, t_eval_points, bounds, x_scaler, y_scaler, log_trajectories=False):
     
+    print("this statement is new")
+
     """
     Optimize the vman control trajectory to maximize biomass.
     Optionally logs every candidate trajectory and its biomass evolution.
