@@ -80,7 +80,7 @@ def generate_fba_data(model, vman, file_path=None, n_samples=1000):
                     )
     return X, Y, feasible_range
 
-def list_infeasible_regions(feasibility_dict, rxn_id="PFK"):
+def list_infeasible_regions(feasibility_dict, rxn_id):
     """
     Identify continuous infeasible regions for a given manipulated reaction.
 

@@ -31,6 +31,9 @@ def hybrid_ode(t, z, vman_func, model_nn, x_scaler, y_scaler):
     dzdt : list of float
         Derivatives [d(glucose)/dt, d(ethanol)/dt, d(biomass)/dt]
     """
+
+    #print(f"we're in the hybrid ODE and received vman_func: {vman_func}, that is of type: {type(vman_func)}")
+
     # Ensure non-negative concentrations
     z = np.maximum(z, 0)
     glucose, ethanol, biomass = z
