@@ -10,7 +10,7 @@ def objective_fn(sol):
 
 def optimize_vman(model, hybrid_ode, z0, t_span, N, t_eval_points, bounds, x_scaler, y_scaler, log_trajectories=False):
     
-    print("this statement is new")
+
 
     """
     Optimize the vman control trajectory to maximize biomass.
@@ -51,10 +51,16 @@ def optimize_vman(model, hybrid_ode, z0, t_span, N, t_eval_points, bounds, x_sca
     control_times = np.linspace(t_span[0], t_span[1], N+1) #split up the timespan into N+1 blocks
     logs=[]
 
+
+
     def simulate(vman_values):
         def vman_t(t):
+            print(f"current vman: {vman_values}")
             idx = np.searchsorted(control_times, t, side='right') - 1
+            print(f"first step: {idx}, t: {t}")
             idx = np.clip(idx, 0 , N - 1)
+            print(f"second step: {idx}, return: {vman_values[idx]}")
+            print("\n")
             return vman_values[idx]
         
 
@@ -87,6 +93,7 @@ def optimize_vman(model, hybrid_ode, z0, t_span, N, t_eval_points, bounds, x_sca
         x0=np.ones(N)*5,
         bounds=bounds,
         method='L-BFGS-B',
+        options={'eps': 1e-1, 'maxiter': 1000, 'ftol': 1e-8}
     )
     
     if log_trajectories:
