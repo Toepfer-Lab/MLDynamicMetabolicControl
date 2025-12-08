@@ -1,5 +1,4 @@
 import numpy as np
-print(np.__version__)
 import torch
 
 def h(z):
@@ -65,5 +64,4 @@ def hybrid_ode(t, z, vman_func, model_nn, x_scaler, y_scaler):
     dzdt[z <= 0] = np.maximum(dzdt[z <= 0], 0)
 
     return dzdt
-
 
