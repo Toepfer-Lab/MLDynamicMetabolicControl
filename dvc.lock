@@ -23,3 +23,70 @@ stages:
       hash: md5
       md5: 9a30424364fdc834fc326b2f0974a9dc
       size: 28919
+  train_surrogate:
+    cmd: "python scripts/train_surrogate.py --vman PYK --condition anaerobic --hidden-dim
+      4 --epochs 5000 --patience 50 --lr 0.001 --model-name PYK_trained_model_input-1_output-4_hidden-4\n"
+    deps:
+    - path: data/fba_data_PYK_anaerobic.npz
+      hash: md5
+      md5: 9a30424364fdc834fc326b2f0974a9dc
+      size: 28919
+    - path: scripts/train_surrogate.py
+      hash: md5
+      md5: 2ed2d008fa851e5b497dc4ccdcecf5eb
+      size: 4573
+    - path: src/
+      hash: md5
+      md5: c8e86fca315184fac2433597cff50c86.dir
+      size: 37629
+      nfiles: 13
+    params:
+      params.yaml:
+        training.epochs: 5000
+        training.hidden_dim: 4
+        training.lr: 0.001
+        training.patience: 50
+    outs:
+    - path: trained_models/PYK_trained_model_input-1_output-4_hidden-4.pt
+      hash: md5
+      md5: f4608e9188b7745754460169b3dca0b5
+      size: 4421
+  optimize:
+    cmd: "python scripts/optimize_vman.py --checkpoint trained_models/PYK_trained_model_input-1_output-4_hidden-4.pt
+      --t-start 0.0 --t-end 12.0 --num-intervals 20 --n-eval 200 --bounds-lower -1.0
+      --bounds-upper 1.0 --initial-state 10.0 0.0 0.01\n"
+    deps:
+    - path: scripts/optimize_vman.py
+      hash: md5
+      md5: cf2753b9c706461b8a226ead85e1fbe8
+      size: 4538
+    - path: src/
+      hash: md5
+      md5: c8e86fca315184fac2433597cff50c86.dir
+      size: 37629
+      nfiles: 13
+    - path: trained_models/PYK_trained_model_input-1_output-4_hidden-4.pt
+      hash: md5
+      md5: f4608e9188b7745754460169b3dca0b5
+      size: 4421
+    params:
+      params.yaml:
+        optimize:
+          t_start: 0.0
+          t_end: 12.0
+          num_intervals: 20
+          n_eval: 200
+          bounds_lower: -1.0
+          bounds_upper: 1.0
+          initial_state: 10.0 0.0 0.01
+    outs:
+    - path: 
+        results/optimize_vman_PYK_trained_model_input-1_output-4_hidden-4.npz
+      hash: md5
+      md5: 341472a9b20eaf6dbeb5698c35dd547f
+      size: 4162
+    - path: 
+        results/optimize_vman_PYK_trained_model_input-1_output-4_hidden-4_logs.npz
+      hash: md5
+      md5: aea856424b4a618632fd1610506274cf
+      size: 239630
