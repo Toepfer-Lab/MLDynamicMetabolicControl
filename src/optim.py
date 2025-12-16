@@ -98,8 +98,8 @@ def optimize_vman(
         cost,
         x0=np.asarray(initial_guess, dtype=float),
         bounds=bounds,
-        method="L-BFGS-B",
-        options={"eps": 1e-1, "maxiter": 1000, "ftol": 1e-8},
+        method="powell",
+        options={"maxiter": 1000, "ftol": 1e-4},
     )
 
     return result, logs

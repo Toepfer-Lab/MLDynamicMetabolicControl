@@ -103,8 +103,11 @@ def main():
     logs_path = RESULTS_DIR / f"optimize_vman_{args.checkpoint.stem}_logs.npz"
     np.savez_compressed(logs_path, logs=np.array(logs, dtype=object))
     print(f"Stored trajectory logs to {logs_path}")
-
+    print("Optimizer message:", result.message)
+    print("nfev:", result.nfev, "nit:", result.nit)
     print(f"Optimization success: {result.success}, final objective {-result.fun:.4f}")
+    final_biomass = -result.fun
+    print(f"Optimal final biomass: {final_biomass:.4f}")
     print(f"Results saved to {output_path}")
 
 

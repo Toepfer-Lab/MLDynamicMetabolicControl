@@ -1,0 +1,7 @@
+{
+  "train_loss_final": 0.0014659385196864605,
+  "val_loss_final": 0.001450411044061184,
+  "test_mse": 0.002183286938816309,
+  "r2_score": 0.9999972581863403,
+  "checkpoint": "/home/jkaatz/MA/MLDynamicMetabolicControl/trained_models/PYK_trained_model_input-1_output-4_hidden-4.pt"
+}
