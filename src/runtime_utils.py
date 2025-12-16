@@ -57,7 +57,7 @@ def load_surrogate_checkpoint(path, model_cls):
     """
     Load a surrogate checkpoint and rebuild the model and scalers.
     """
-    payload = torch.load(path, map_location="cpu")
+    payload = torch.load(path, map_location="cpu", weights_only=False)
     hyper = payload.get("model_hyperparams", {})
     model = model_cls(
         input_dim=hyper.get("input_dim", 1),
