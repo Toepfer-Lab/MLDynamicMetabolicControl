@@ -1,7 +1,0 @@
-{
-  "train_loss_final": 0.0016167096327990294,
-  "val_loss_final": 0.001481146551668644,
-  "test_mse": 0.0018827426247298717,
-  "r2_score": 0.9999976754188538,
-  "checkpoint": "/home/jkaatz/MA/MLDynamicMetabolicControl/trained_models/PYK_anaerobic_input-1_output-4_hidden-4.pt"
-}
