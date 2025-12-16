@@ -40,7 +40,7 @@ def optimize_vman(
     x_scaler,
     y_scaler,
     initial_guess=None,
-    log_trajectories=False,
+    #log_trajectories=True,
     verbose=False,
 ):
     """
@@ -67,8 +67,6 @@ def optimize_vman(
         Normalization scalers used for the surrogate model.
     initial_guess : array-like, optional
         Starting guess for optimization; defaults to midpoint of bounds.
-    log_trajectories : bool
-        If True, stores each evaluated control trajectory and biomass evolution
     verbose : bool
         If True, print diagnostics during optimization.
 
@@ -76,7 +74,7 @@ def optimize_vman(
     -------
     result : OptimizeResult
         Output of scipy.optimize.minimize
-    logs : list of dict (if log_trajectories=True)
+    logs : list of dict 
         Each dict has keys:
             'vman_values' → np.array of control nodes
             't'           → time vector
@@ -95,7 +93,7 @@ def optimize_vman(
 
         sol = solve_ivp(rhs, t_span, z0, t_eval=t_eval_points, method="RK45")
 
-        if log_trajectories and sol.success:
+        if sol.success:
             logs.append(
                 {
                     "vman_values": np.copy(vman_values),
@@ -129,6 +127,5 @@ def optimize_vman(
         options={"eps": 1e-1, "maxiter": 1000, "ftol": 1e-8},
     )
 
-    if log_trajectories:
-        return result, logs
-    return result
+    
+    return result, logs
