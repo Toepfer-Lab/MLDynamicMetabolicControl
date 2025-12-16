@@ -2,6 +2,8 @@
 data/
 plots/
 trained_models/
+results/
+plots/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
