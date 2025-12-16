@@ -4,17 +4,10 @@ from scipy.optimize import minimize
 
 
 def objective_fn(sol):
-    """
-    Objective: maximize final biomass concentration.
-    """
-    biomass_final = sol.y[2, -1]  # assumes index 2 corresponds to biomass
-    return biomass_final
+    return sol.y[2, -1]  # biomass final
 
 
 def piecewise_constant_control(control_times, values):
-    """
-    Build a piecewise-constant control signal.
-    """
     values = np.asarray(values)
 
     def control(t):
@@ -25,7 +18,6 @@ def piecewise_constant_control(control_times, values):
     return control
 
 
-# Backwards compatibility for older imports
 _piecewise_constant = piecewise_constant_control
 
 
@@ -40,52 +32,19 @@ def optimize_vman(
     x_scaler,
     y_scaler,
     initial_guess=None,
-    #log_trajectories=True,
     verbose=False,
+    log_full_every_k=10,   # store full trajectories every k evals
+    log_best_full=True,    # also store full trajectory whenever we hit a new best
 ):
-    """
-    Optimize the vman control trajectory to maximize biomass.
-    Optionally logs every candidate trajectory and its biomass evolution.
-
-    Parameters
-    ----------
-    model : torch.nn.Module
-        Trained surrogate network.
-    hybrid_ode : callable
-        Right-hand-side function for the hybrid ODE.
-    z0 : list
-        Initial state [glucose, ethanol, biomass]
-    t_span : tuple
-        Time interval (t0, tf)
-    N : int
-        Number of control intervals
-    t_eval_points : array
-        Time points for solver output
-    bounds : list of tuples
-        Bounds for vman values
-    x_scaler, y_scaler : sklearn scalers
-        Normalization scalers used for the surrogate model.
-    initial_guess : array-like, optional
-        Starting guess for optimization; defaults to midpoint of bounds.
-    verbose : bool
-        If True, print diagnostics during optimization.
-
-    Returns
-    -------
-    result : OptimizeResult
-        Output of scipy.optimize.minimize
-    logs : list of dict 
-        Each dict has keys:
-            'vman_values' → np.array of control nodes
-            't'           → time vector
-            'biomass'     → biomass trajectory
-            'final_biomass' → final biomass value
-    """
-
-    control_times = np.linspace(t_span[0], t_span[1], N + 1)  # split into N intervals
+    control_times = np.linspace(t_span[0], t_span[1], N + 1)
     logs = []
 
+    eval_idx = 0
+    best_final = -np.inf
+
     def simulate(vman_values):
+        nonlocal eval_idx, best_final
+
         vman_t = piecewise_constant_control(control_times, vman_values)
 
         def rhs(t, z):
@@ -93,16 +52,32 @@ def optimize_vman(
 
         sol = solve_ivp(rhs, t_span, z0, t_eval=t_eval_points, method="RK45")
 
+        # Always log light info (if solver succeeded; you can also log failures if you want)
         if sol.success:
-            logs.append(
-                {
-                    "vman_values": np.copy(vman_values),
-                    "t": sol.t,
-                    "biomass": sol.y[2, :],
-                    "final_biomass": sol.y[2, -1],
-                }
-            )
+            final_biomass = sol.y[2, -1]
 
+            store_full = (log_full_every_k is not None and log_full_every_k > 0 and (eval_idx % log_full_every_k == 0))
+
+            is_new_best = final_biomass > best_final
+            if is_new_best:
+                best_final = final_biomass
+                if log_best_full:
+                    store_full = True  # override: keep the curve at new best
+
+            entry = {
+                "eval_idx": eval_idx,
+                "vman_values": np.copy(vman_values),
+                "final_biomass": float(final_biomass),
+                "store_full": bool(store_full),
+            }
+
+            if store_full:
+                entry["t"] = sol.t
+                entry["biomass"] = sol.y[2, :]
+
+            logs.append(entry)
+
+        eval_idx += 1
         return sol
 
     if initial_guess is None:
@@ -113,10 +88,10 @@ def optimize_vman(
     def cost(vman_values):
         sol = simulate(vman_values)
         if sol is None or not sol.success:
-            return np.inf  # penalize integration failures
+            return np.inf
         final_biomass = objective_fn(sol)
         if verbose:
-            print(f"Candidate biomass: {final_biomass:.4f}")
+            print(f"[eval {eval_idx-1}] Candidate biomass: {final_biomass:.4f}")
         return -final_biomass
 
     result = minimize(
@@ -127,5 +102,4 @@ def optimize_vman(
         options={"eps": 1e-1, "maxiter": 1000, "ftol": 1e-8},
     )
 
-    
     return result, logs

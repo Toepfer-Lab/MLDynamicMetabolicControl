@@ -39,8 +39,8 @@ def parse_args():
         default=[10.0, 0.0, 0.01],
         help="Initial concentrations",
     )
-    parser.add_argument("--log-trajectories", action="store_true", help="Store biomass curves for evaluated controls")
-    parser.add_argument("--verbose", action="store_true", help="Print diagnostic information during optimization")
+    parser.add_argument("--verbose", action="store_true", help="Print diagnostic information during optimization"),
+    parser.add_argument("--log-full-every-k", type=int, default=10, help="Log full trajectories every k evaluations")
     return parser.parse_args()
 
 
@@ -59,38 +59,20 @@ def main():
     bounds = [(lower, upper)] * args.num_intervals
     t_eval_points = np.linspace(args.t_start, args.t_end, args.n_eval)
 
-    result, logs = (
-        optimize_vman(
-            model=model,
-            hybrid_ode=hybrid_model.hybrid_ode,
-            z0=args.initial_state,
-            t_span=(args.t_start, args.t_end),
-            N=args.num_intervals,
-            t_eval_points=t_eval_points,
-            bounds=bounds,
-            x_scaler=x_scaler,
-            y_scaler=y_scaler,
-            log_trajectories=args.log_trajectories,
-            verbose=args.verbose,
-        )
-        if args.log_trajectories
-        else (
-            optimize_vman(
-                model=model,
-                hybrid_ode=hybrid_model.hybrid_ode,
-                z0=args.initial_state,
-                t_span=(args.t_start, args.t_end),
-                N=args.num_intervals,
-                t_eval_points=t_eval_points,
-                bounds=bounds,
-                x_scaler=x_scaler,
-                y_scaler=y_scaler,
-                log_trajectories=False,
-                verbose=args.verbose,
-            ),
-            None,
-        )
+    result, logs = optimize_vman(
+        model=model,
+        hybrid_ode=hybrid_model.hybrid_ode,
+        z0=args.initial_state,
+        t_span=(args.t_start, args.t_end),
+        N=args.num_intervals,
+        t_eval_points=t_eval_points,
+        bounds=bounds,
+        x_scaler=x_scaler,
+        y_scaler=y_scaler,
+        log_full_every_k=args.log_full_every_k,
+        verbose=args.verbose,
     )
+
 
     opt_vman_values = result.x
     control_times = np.linspace(args.t_start, args.t_end, args.num_intervals + 1)
@@ -106,21 +88,21 @@ def main():
 
     output_path = RESULTS_DIR / f"optimize_vman_{args.checkpoint.stem}.npz"
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    np.savez_compressed(
-        output_path,
-        opt_vman_values=opt_vman_values,
-        control_times=control_times,
-        t_eval_points=t_eval_points,
-        biomass=sol_opt.y[2, :] if sol_opt.success else np.array([]),
-        trajectories_logged=bool(args.log_trajectories),
-        solver_success=sol_opt.success,
-        metadata=metadata,
-    )
 
-    if logs is not None:
-        logs_path = RESULTS_DIR / f"optimize_vman_{args.checkpoint.stem}_logs.npz"
-        np.savez_compressed(logs_path, logs=np.array(logs, dtype=object))
-        print(f"Stored trajectory logs to {logs_path}")
+    np.savez_compressed(
+    output_path,
+    opt_vman_values=opt_vman_values,
+    control_times=control_times,
+    t_eval_points=t_eval_points,
+    biomass=sol_opt.y[2, :] if sol_opt.success else np.array([]),
+    
+    solver_success=sol_opt.success,
+    metadata=metadata,
+)
+
+    logs_path = RESULTS_DIR / f"optimize_vman_{args.checkpoint.stem}_logs.npz"
+    np.savez_compressed(logs_path, logs=np.array(logs, dtype=object))
+    print(f"Stored trajectory logs to {logs_path}")
 
     print(f"Optimization success: {result.success}, final objective {-result.fun:.4f}")
     print(f"Results saved to {output_path}")
