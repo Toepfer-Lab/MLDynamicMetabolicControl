@@ -49,6 +49,8 @@ stages:
       --bounds-lower ${optimize.bounds_lower}
       --bounds-upper ${optimize.bounds_upper}
       --initial-state ${optimize.initial_state}
+      --output-path results/optimize_vman_${data.vman}_hidden-${training.hidden_dim}_tend-${optimize.t_end}_N-${optimize.num_intervals}.npz
+      --logs-path results/optimize_vman_${data.vman}_hidden-${training.hidden_dim}_tend-${optimize.t_end}_N-${optimize.num_intervals}_logs.npz
     deps:
       - trained_models/${data.vman}_trained_model_input-1_output-4_hidden-${training.hidden_dim}.pt
       - scripts/optimize_vman.py
@@ -56,16 +58,18 @@ stages:
     params:
       - optimize
     outs:
-      - results/optimize_vman_${data.vman}_trained_model_input-1_output-4_hidden-${training.hidden_dim}.npz
-      - results/optimize_vman_${data.vman}_trained_model_input-1_output-4_hidden-${training.hidden_dim}_logs.npz
+      - results/optimize_vman_${data.vman}_hidden-${training.hidden_dim}_tend-${optimize.t_end}_N-${optimize.num_intervals}.npz
+      - results/optimize_vman_${data.vman}_hidden-${training.hidden_dim}_tend-${optimize.t_end}_N-${optimize.num_intervals}_logs.npz
 
   plot:
     cmd: >
       python scripts/plot_optimize_vman.py
-      --stem ${data.vman}_trained_model_input-1_output-4_hidden-${training.hidden_dim}
+      --results results/optimize_vman_${data.vman}_hidden-${training.hidden_dim}_tend-${optimize.t_end}_N-${optimize.num_intervals}.npz
+      --logs results/optimize_vman_${data.vman}_hidden-${training.hidden_dim}_tend-${optimize.t_end}_N-${optimize.num_intervals}_logs.npz
+      --outdir plots/tend-${optimize.t_end}_N-${optimize.num_intervals}
     deps:
-      - results/optimize_vman_${data.vman}_trained_model_input-1_output-4_hidden-${training.hidden_dim}.npz
-      - results/optimize_vman_${data.vman}_trained_model_input-1_output-4_hidden-${training.hidden_dim}_logs.npz
+      - results/optimize_vman_${data.vman}_hidden-${training.hidden_dim}_tend-${optimize.t_end}_N-${optimize.num_intervals}.npz
+      - results/optimize_vman_${data.vman}_hidden-${training.hidden_dim}_tend-${optimize.t_end}_N-${optimize.num_intervals}_logs.npz
       - scripts/plot_optimize_vman.py
     outs:
-      - plots/
+      - plots/tend-${optimize.t_end}_N-${optimize.num_intervals}/

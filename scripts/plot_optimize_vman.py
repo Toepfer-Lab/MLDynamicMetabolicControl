@@ -12,7 +12,6 @@ Saves PNGs to the plots/ directory by default.
 import argparse
 import sys
 from pathlib import Path
-
 import numpy as np
 
 # Non-interactive backend for cluster/headless runs
@@ -21,12 +20,14 @@ matplotlib.use("Agg")  # noqa: E402
 import matplotlib.pyplot as plt  # noqa: E402
 
 # Make local src importable
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SRC_DIR = REPO_ROOT / "src"
 if str(SRC_DIR) not in sys.path:
-    sys.path.append(str(SRC_DIR))
+    sys.path.insert(0, str(SRC_DIR))
 
 from runtime_utils import PLOT_DIR, RESULTS_DIR, ensure_output_dirs  # noqa: E402
+
 
 
 def parse_args():
@@ -67,6 +68,19 @@ def parse_args():
         action="store_true",
         help="Try to display plots (usually not useful on a cluster). Always saves files regardless.",
     )
+    p.add_argument(
+    "--output-path",
+    type=Path,
+    default=None,
+    help="Where to save the main results .npz (overrides default naming)",
+    )
+    p.add_argument(
+        "--logs-path",
+        type=Path,
+        default=None,
+        help="Where to save the trajectory logs .npz (overrides default naming)",
+    )
+
     return p.parse_args()
 
 

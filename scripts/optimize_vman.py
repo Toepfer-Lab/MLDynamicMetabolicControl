@@ -14,7 +14,7 @@ from scipy.integrate import solve_ivp
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SRC_DIR = REPO_ROOT / "src"
 if str(SRC_DIR) not in sys.path:
-    sys.path.append(str(SRC_DIR))
+    sys.path.insert(0, str(SRC_DIR))
 
 import hybrid_model  # noqa: E402
 from optim import piecewise_constant_control, optimize_vman  # noqa: E402
@@ -24,13 +24,48 @@ from surrogateNN import SurrogateNN  # noqa: E402
 
 def parse_args():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--checkpoint", type=Path, required=True, help="Path to model checkpoint (.pt)")
-    parser.add_argument("--t-start", type=float, default=0.0, help="Optimization start time")
-    parser.add_argument("--t-end", type=float, default=12.0, help="Optimization end time")
-    parser.add_argument("--num-intervals", type=int, default=20, help="Number of control intervals (N)")
-    parser.add_argument("--n-eval", type=int, default=200, help="Number of time points for solver outputs")
-    parser.add_argument("--bounds-lower", type=float, default=None, help="Lower bound for vman (overrides metadata)")
-    parser.add_argument("--bounds-upper", type=float, default=None, help="Upper bound for vman (overrides metadata)")
+    parser.add_argument(
+        "--checkpoint",
+        type=Path,
+        required=True,
+        help="Path to model checkpoint (.pt)",
+    )
+    parser.add_argument(
+        "--t-start",
+        type=float,
+        default=0.0,
+        help="Optimization start time",
+    )
+    parser.add_argument(
+        "--t-end",
+        type=float,
+        default=12.0,
+        help="Optimization end time",
+    )
+    parser.add_argument(
+        "--num-intervals",
+        type=int,
+        default=20,
+        help="Number of control intervals (N)",
+    )
+    parser.add_argument(
+        "--n-eval",
+        type=int,
+        default=200,
+        help="Number of time points for solver outputs",
+    )
+    parser.add_argument(
+        "--bounds-lower",
+        type=float,
+        default=None,
+        help="Lower bound for vman (overrides metadata)",
+    )
+    parser.add_argument(
+        "--bounds-upper",
+        type=float,
+        default=None,
+        help="Upper bound for vman (overrides metadata)",
+    )
     parser.add_argument(
         "--initial-state",
         type=float,
@@ -39,8 +74,30 @@ def parse_args():
         default=[10.0, 0.0, 0.01],
         help="Initial concentrations",
     )
-    parser.add_argument("--verbose", action="store_true", help="Print diagnostic information during optimization"),
-    parser.add_argument("--log-full-every-k", type=int, default=10, help="Log full trajectories every k evaluations")
+    parser.add_argument(
+        "--verbose",
+        action="store_true",
+        help="Print diagnostic information during optimization",
+    )
+    parser.add_argument(
+        "--log-full-every-k",
+        type=int,
+        default=10,
+        help="Log full trajectories every k evaluations",
+    )
+    parser.add_argument(
+        "--output-path",
+        type=Path,
+        default=None,
+        help="Where to save the main results .npz (overrides default naming)",
+    )
+    parser.add_argument(
+        "--logs-path",
+        type=Path,
+        default=None,
+        help="Where to save the logs .npz (overrides default naming)",
+    )
+
     return parser.parse_args()
 
 
@@ -86,7 +143,7 @@ def main():
         method="RK45",
     )
 
-    output_path = RESULTS_DIR / f"optimize_vman_{args.checkpoint.stem}.npz"
+    output_path = args.output_path or (RESULTS_DIR / f"optimize_vman_{args.checkpoint.stem}.npz")
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     np.savez_compressed(
@@ -100,7 +157,9 @@ def main():
     metadata=metadata,
 )
 
-    logs_path = RESULTS_DIR / f"optimize_vman_{args.checkpoint.stem}_logs.npz"
+    logs_path = args.logs_path or (RESULTS_DIR / f"optimize_vman_{args.checkpoint.stem}_logs.npz")
+    logs_path.parent.mkdir(parents=True, exist_ok=True)
+
     np.savez_compressed(logs_path, logs=np.array(logs, dtype=object))
     print(f"Stored trajectory logs to {logs_path}")
     print("Optimizer message:", result.message)
