@@ -14,7 +14,9 @@ SRC_DIR = REPO_ROOT / "src"
 if str(SRC_DIR) not in sys.path:
     sys.path.append(str(SRC_DIR))
 
-from cobra.io import load_model  # noqa: E402
+from cobra.io import load_model, read_sbml_model
+
+
 import FBA_data_generation  # noqa: E402
 from runtime_utils import DATA_DIR, ensure_output_dirs  # noqa: E402
 
@@ -40,7 +42,20 @@ def configure_medium(model, condition: str, glucose_ub: Optional[float]):
 def parse_args():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--vman", default="PYK", help="Reaction ID to manipulate (e.g. PFK, PYK)")
-    parser.add_argument("--model-id", default="textbook", help="COBRA model ID to load (default: textbook)")
+
+
+    parser.add_argument(
+        "--model-id",
+        default="textbook",
+        help="COBRA model ID to load (e.g. 'textbook'); ignored if --model-path is set",
+    )
+
+    parser.add_argument(
+        "--model-path",
+        type=Path,
+        default=None,
+        help="Path to SBML model file (overrides --model-id)",
+    )
     parser.add_argument(
         "--condition",
         choices=["aerobic", "anaerobic"],
@@ -72,7 +87,12 @@ def main():
     if output_path.exists() and not args.overwrite:
         raise FileExistsError(f"{output_path} already exists. Use --overwrite to replace it.")
 
-    model = load_model(args.model_id)
+    # ✅ choose model source
+    if args.model_path is not None:
+        model = read_sbml_model(str(args.model_path))
+    else:
+        model = load_model(args.model_id)
+
     configure_medium(model, args.condition, args.glucose_ub)
 
     X, Y, feasible_range = FBA_data_generation.generate_fba_data(

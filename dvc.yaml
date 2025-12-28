@@ -3,6 +3,7 @@ stages:
   generate_data:
     cmd: >
       python scripts/generate_fba_data.py
+      --model-path ${data.model_path}
       --vman ${data.vman}
       --condition ${data.condition}
       --n-samples ${data.n_samples}

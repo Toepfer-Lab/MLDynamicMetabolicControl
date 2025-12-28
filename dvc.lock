@@ -1,7 +1,7 @@
 schema: '2.0'
 stages:
   generate_data:
-    cmd: "python scripts/generate_fba_data.py --vman PYK --condition anaerobic --n-samples
+    cmd: "python scripts/generate_fba_data.py --vman ACKr --condition anaerobic --n-samples
       1000\n"
     deps:
     - path: scripts/generate_fba_data.py
@@ -10,52 +10,52 @@ stages:
       size: 2989
     - path: src/
       hash: md5
-      md5: c8e86fca315184fac2433597cff50c86.dir
-      size: 37629
+      md5: 60690542a9db0bf2cf0ffb9b71b2dad6.dir
+      size: 36035
       nfiles: 13
     params:
       params.yaml:
         data.condition: anaerobic
         data.n_samples: 1000
-        data.vman: PYK
+        data.vman: ACKr
     outs:
-    - path: data/fba_data_PYK_anaerobic.npz
+    - path: data/fba_data_ACKr_anaerobic.npz
       hash: md5
-      md5: 9a30424364fdc834fc326b2f0974a9dc
-      size: 28919
+      md5: bc79ffb711d04f69d24b280185f6d1db
+      size: 809
   train_surrogate:
-    cmd: "python scripts/train_surrogate.py --vman PYK --condition anaerobic --hidden-dim
-      4 --epochs 5000 --patience 50 --lr 0.001 --model-name PYK_trained_model_input-1_output-4_hidden-4\n"
+    cmd: "python scripts/train_surrogate.py --vman ACKr --condition anaerobic --hidden-dim
+      4 --epochs 500 --patience 50 --lr 0.001 --model-name ACKr_trained_model_input-1_output-4_hidden-4\n"
     deps:
-    - path: data/fba_data_PYK_anaerobic.npz
+    - path: data/fba_data_ACKr_anaerobic.npz
       hash: md5
-      md5: 9a30424364fdc834fc326b2f0974a9dc
-      size: 28919
+      md5: bc79ffb711d04f69d24b280185f6d1db
+      size: 809
     - path: scripts/train_surrogate.py
       hash: md5
       md5: 2ed2d008fa851e5b497dc4ccdcecf5eb
       size: 4573
     - path: src/
       hash: md5
-      md5: c8e86fca315184fac2433597cff50c86.dir
-      size: 37629
+      md5: 60690542a9db0bf2cf0ffb9b71b2dad6.dir
+      size: 36035
       nfiles: 13
     params:
       params.yaml:
-        training.epochs: 5000
+        training.epochs: 500
         training.hidden_dim: 4
         training.lr: 0.001
         training.patience: 50
     outs:
-    - path: trained_models/PYK_trained_model_input-1_output-4_hidden-4.pt
+    - path: trained_models/ACKr_trained_model_input-1_output-4_hidden-4.pt
       hash: md5
-      md5: f4608e9188b7745754460169b3dca0b5
-      size: 4421
+      md5: bb46c63584f0d870939ba13d3d923300
+      size: 4431
   optimize:
-    cmd: "python scripts/optimize_vman.py --checkpoint trained_models/PYK_trained_model_input-1_output-4_hidden-4.pt
-      --t-start 0.0 --t-end 24 --num-intervals 40 --n-eval 200 --bounds-lower -1.0
-      --bounds-upper 1.0 --initial-state 10.0 0.0 0.01 --output-path results/optimize_vman_PYK_hidden-4_tend-24_N-40.npz
-      --logs-path results/optimize_vman_PYK_hidden-4_tend-24_N-40_logs.npz\n"
+    cmd: "python scripts/optimize_vman.py --checkpoint trained_models/ACKr_trained_model_input-1_output-4_hidden-4.pt
+      --t-start 0.0 --t-end 12 --num-intervals 40 --n-eval 200 --bounds-lower 0.0
+      --bounds-upper 1.0 --initial-state 10.0 0.0 0.01 --output-path results/optimize_vman_ACKr_hidden-4_tend-12_N-40.npz
+      --logs-path results/optimize_vman_ACKr_hidden-4_tend-12_N-40_logs.npz\n"
     deps:
     - path: scripts/optimize_vman.py
       hash: md5
@@ -63,51 +63,51 @@ stages:
       size: 5325
     - path: src/
       hash: md5
-      md5: c8e86fca315184fac2433597cff50c86.dir
-      size: 37629
+      md5: 60690542a9db0bf2cf0ffb9b71b2dad6.dir
+      size: 36035
       nfiles: 13
-    - path: trained_models/PYK_trained_model_input-1_output-4_hidden-4.pt
+    - path: trained_models/ACKr_trained_model_input-1_output-4_hidden-4.pt
       hash: md5
-      md5: f4608e9188b7745754460169b3dca0b5
-      size: 4421
+      md5: bb46c63584f0d870939ba13d3d923300
+      size: 4431
     params:
       params.yaml:
         optimize:
           t_start: 0.0
-          t_end: 24
+          t_end: 12
           num_intervals: 40
           n_eval: 200
-          bounds_lower: -1.0
+          bounds_lower: 0.0
           bounds_upper: 1.0
           initial_state: 10.0 0.0 0.01
     outs:
-    - path: results/optimize_vman_PYK_hidden-4_tend-24_N-40.npz
+    - path: results/optimize_vman_ACKr_hidden-4_tend-12_N-40.npz
       hash: md5
-      md5: 4deafd9095e8321a54f108bfa382854c
-      size: 4235
-    - path: results/optimize_vman_PYK_hidden-4_tend-24_N-40_logs.npz
+      md5: 017482d13e7f6e1ec7f6db2bad6a877a
+      size: 3502
+    - path: results/optimize_vman_ACKr_hidden-4_tend-12_N-40_logs.npz
       hash: md5
-      md5: 89997580d0c08695c76aa5832347d977
-      size: 369378
+      md5: d7d15d4db4edcf1c549dd88989da111a
+      size: 162416
   plot:
-    cmd: "python scripts/plot_optimize_vman.py --results results/optimize_vman_PYK_hidden-4_tend-24_N-40.npz
-      --logs results/optimize_vman_PYK_hidden-4_tend-24_N-40_logs.npz --outdir plots/tend-24_N-40\n"
+    cmd: "python scripts/plot_optimize_vman.py --results results/optimize_vman_ACKr_hidden-4_tend-12_N-40.npz
+      --logs results/optimize_vman_ACKr_hidden-4_tend-12_N-40_logs.npz --outdir plots/tend-12_N-40\n"
     deps:
-    - path: results/optimize_vman_PYK_hidden-4_tend-24_N-40.npz
+    - path: results/optimize_vman_ACKr_hidden-4_tend-12_N-40.npz
       hash: md5
-      md5: 4deafd9095e8321a54f108bfa382854c
-      size: 4235
-    - path: results/optimize_vman_PYK_hidden-4_tend-24_N-40_logs.npz
+      md5: 017482d13e7f6e1ec7f6db2bad6a877a
+      size: 3502
+    - path: results/optimize_vman_ACKr_hidden-4_tend-12_N-40_logs.npz
       hash: md5
-      md5: 89997580d0c08695c76aa5832347d977
-      size: 369378
+      md5: d7d15d4db4edcf1c549dd88989da111a
+      size: 162416
     - path: scripts/plot_optimize_vman.py
       hash: md5
       md5: d3fe9c53194e7b1678f59c7b20e56a46
       size: 5098
     outs:
-    - path: plots/tend-24_N-40/
+    - path: plots/tend-12_N-40/
       hash: md5
-      md5: 6f34d2d247107a00bc6ef6c2985964a6.dir
-      size: 247249
+      md5: 8c732aa881e6a1ac55a19cf062152946.dir
+      size: 175761
       nfiles: 2

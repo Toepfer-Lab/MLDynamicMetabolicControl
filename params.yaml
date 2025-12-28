@@ -1,19 +1,20 @@
 # params.yaml
 
 data:
-  vman: PYK
+  model_path: model/Escherichia_coli_iCH360.xml
+  vman: ACKr
   condition: anaerobic
   n_samples: 1000
 
 training:
   hidden_dim: 4
-  epochs: 5000
+  epochs: 500
   patience: 50
   lr: 0.001
 
 optimize:
   t_start: 0.0
-  t_end: 24          # <-- change to 24.0 later
+  t_end: 12          # <-- change to 24.0 later
   num_intervals: 40  # <-- change to 40 later
   n_eval: 200
   bounds_lower: -1.0
