@@ -138,23 +138,68 @@ def main():
     plt.tight_layout()
     plt.savefig(biomass_plot_path, dpi=200)
 
-    # --- Plot 2: Optimized control profile ---
-    opt_vman_values = np.asarray(res["opt_vman_values"])
-    control_times = np.asarray(res["control_times"])
+     # --- Plot 2: Optimized control profile + best biomass (twin axis) ---
+    opt_vman_values = np.asarray(res["opt_vman_values"], dtype=float)
+    control_times = np.asarray(res["control_times"], dtype=float)
 
-    plt.figure(figsize=(8, 4))
-    # Step plot: N intervals means N values, and control_times has N+1 points
-    plt.step(control_times[:-1], opt_vman_values, where="post")
-    plt.xlabel("Time [h]")
-    plt.ylabel("Optimized vman values")
-    plt.title(f"Optimized Control Profile\n({results_path.stem})")
-    plt.grid(True)
-    vman_plot_path = outdir / f"{results_path.stem}_vman_profile.png"
+    # Ensure we have N values and N+1 time points
+    if control_times.size != opt_vman_values.size + 1:
+        raise ValueError(
+            f"Expected control_times (N+1) and opt_vman_values (N). "
+            f"Got control_times={control_times.size}, opt_vman_values={opt_vman_values.size}"
+        )
+
+    # Repeat last value so the final interval is shown up to t_end
+    opt_vman_plot = np.r_[opt_vman_values, opt_vman_values[-1]]
+
+    # Choose "best" biomass curve from logs: max final biomass among entries with full curves
+    best_entry = None
+    best_final = -np.inf
+    for e in logs:
+        if isinstance(e, dict) and ("t" in e) and ("biomass" in e):
+            b = np.asarray(e["biomass"], dtype=float)
+            if b.size and np.isfinite(b[-1]) and b[-1] > best_final:
+                best_final = float(b[-1])
+                best_entry = e
+
+    fig, ax1 = plt.subplots(figsize=(9, 4.5))
+
+    # Left axis: control (step)
+    ax1.step(control_times, opt_vman_plot, where="post", linewidth=2, label="Optimized vman")
+    ax1.set_xlabel("Time [h]")
+    ax1.set_ylabel("vman (flux)")
+    ax1.set_xlim(control_times[0], control_times[-1])
+    ax1.grid(True)
+
+    # Right axis: best biomass (line)
+    ax2 = ax1.twinx()
+    if best_entry is not None:
+        t_best = np.asarray(best_entry["t"], dtype=float)
+        b_best = np.asarray(best_entry["biomass"], dtype=float)
+        ax2.plot(t_best, b_best, 'g', linewidth=2, label=f"Biomass (best, final={best_final:.3g})")
+    else:
+        # Still create the axis, but annotate that no curve was available
+        ax2.set_ylabel("Biomass")
+        ax2.text(
+            0.02, 0.95, "No full biomass curve found in logs",
+            transform=ax2.transAxes, va="top"
+        )
+
+    ax2.set_ylabel("Biomass")
+
+    # Combined legend (handles from both axes)
+    h1, l1 = ax1.get_legend_handles_labels()
+    h2, l2 = ax2.get_legend_handles_labels()
+    ax1.legend(h1 + h2, l1 + l2, loc="best")
+
+    plt.title(f"Optimized Control + Biomass\n({results_path.stem})")
     plt.tight_layout()
-    plt.savefig(vman_plot_path, dpi=200)
+
+    combo_plot_path = outdir / f"{results_path.stem}_control_plus_biomass.png"
+    plt.savefig(combo_plot_path, dpi=200)
 
     print(f"Saved biomass trajectories plot to {biomass_plot_path}")
-    print(f"Saved vman profile plot to {vman_plot_path}")
+    print(f"Saved control+biomass plot to {combo_plot_path}")
 
     if args.show:
         plt.show()

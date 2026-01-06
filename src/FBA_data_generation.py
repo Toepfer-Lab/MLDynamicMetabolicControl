@@ -1,7 +1,7 @@
 import numpy as np
 import os
 
-def generate_fba_data(model, vman, file_path=None, n_samples=1000):
+def generate_fba_data(model, vman, file_path=None, n_samples=10000):
     """
     Generate steady-state FBA data for a given control flux (vman).
 
@@ -30,7 +30,8 @@ def generate_fba_data(model, vman, file_path=None, n_samples=1000):
 
     # STEP 1
     # Do a coarse sweep of vman in order to identify feasible regions
-    coarse_values = np.linspace(rxn.lower_bound, rxn.upper_bound, 200)
+    coarse_values = np.linspace(rxn.lower_bound, rxn.upper_bound, 2000)
+    print(f"reaction bounds: [{rxn.lower_bound}, {rxn.upper_bound}]")
     feasibility_dict = {}  # Tracks whether each vman value is feasible
     feasible_points = []
 

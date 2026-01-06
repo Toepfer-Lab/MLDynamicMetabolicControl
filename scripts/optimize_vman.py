@@ -113,7 +113,8 @@ def main():
     if lower is None or upper is None:
         raise ValueError("Bounds must be provided either via --bounds-lower/--bounds-upper or stored in metadata.")
 
-    bounds = [(lower, upper)] * args.num_intervals
+    rxn_bounds = [(lower, upper)] * args.num_intervals
+    # Solver output sampling grid; separate from control_times (decision grid).
     t_eval_points = np.linspace(args.t_start, args.t_end, args.n_eval)
 
     result, logs = optimize_vman(
@@ -123,7 +124,7 @@ def main():
         t_span=(args.t_start, args.t_end),
         N=args.num_intervals,
         t_eval_points=t_eval_points,
-        bounds=bounds,
+        bounds=rxn_bounds,
         x_scaler=x_scaler,
         y_scaler=y_scaler,
         log_full_every_k=args.log_full_every_k,
@@ -132,6 +133,9 @@ def main():
 
 
     opt_vman_values = result.x
+    print(f"optimal vman values: {opt_vman_values}")
+
+    # Control grid used to construct the optimized piecewise-constant profile.
     control_times = np.linspace(args.t_start, args.t_end, args.num_intervals + 1)
     vman_t_opt = piecewise_constant_control(control_times, opt_vman_values)
 

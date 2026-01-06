@@ -52,7 +52,7 @@ def optimize_vman(
 
         sol = solve_ivp(rhs, t_span, z0, t_eval=t_eval_points, method="RK45")
 
-        # Always log light info (if solver succeeded; you can also log failures if you want)
+        # Always log light info (if solver succeeded)
         if sol.success:
             final_biomass = sol.y[2, -1]
 
@@ -99,7 +99,7 @@ def optimize_vman(
         x0=np.asarray(initial_guess, dtype=float),
         bounds=bounds,
         method="powell",
-        options={"maxiter": 1000, "ftol": 1e-4},
+        options={"maxiter": 100000, "ftol": 1e-4},
     )
 
     return result, logs

@@ -1,7 +1,7 @@
 # params.yaml
 
 data:
-  model_path: model/Escherichia_coli_iCH360.xml
+  model_path: model/iML1515.xml
   vman: ACKr
   condition: anaerobic
   n_samples: 1000
@@ -16,7 +16,7 @@ optimize:
   t_start: 0.0
   t_end: 12          # <-- change to 24.0 later
   num_intervals: 40  # <-- change to 40 later
-  n_eval: 200
-  bounds_lower: -1.0
-  bounds_upper: 1.0
+  n_eval: 1000
+  bounds_lower: -32.0
+  bounds_upper: 12.0
   initial_state: 10.0 0.0 0.01

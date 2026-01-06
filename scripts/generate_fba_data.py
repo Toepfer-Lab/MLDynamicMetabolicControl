@@ -82,14 +82,16 @@ def parse_args():
 def main():
     args = parse_args()
     ensure_output_dirs()
-
+    print(f"model path is: {args.model_path}")
     output_path = args.output or DATA_DIR / f"fba_data_{args.vman}_{args.condition}.npz"
     if output_path.exists() and not args.overwrite:
         raise FileExistsError(f"{output_path} already exists. Use --overwrite to replace it.")
 
-    # ✅ choose model source
-    if args.model_path is not None:
-        model = read_sbml_model(str(args.model_path))
+    mp = args.model_path
+    mp = None if mp is None else str(mp).strip()
+
+    if mp and mp.lower() not in {"none", "null"}:
+        model = read_sbml_model(mp)
     else:
         model = load_model(args.model_id)
 
