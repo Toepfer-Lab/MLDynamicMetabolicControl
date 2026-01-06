@@ -1,0 +1,76 @@
+stages:
+
+  generate_data:
+    cmd: >
+      python scripts/generate_fba_data.py
+      --model-path ${data.model_path}
+      --vman ${data.vman}
+      --condition ${data.condition}
+      --n-samples ${data.n_samples}
+    deps:
+      - scripts/generate_fba_data.py
+      - src/
+    params:
+      - data.vman
+      - data.condition
+      - data.n_samples
+    outs:
+      - data/fba_data_${data.vman}_${data.condition}.npz
+
+  train_surrogate:
+    cmd: >
+      python scripts/train_surrogate.py
+      --vman ${data.vman}
+      --condition ${data.condition}
+      --hidden-dim ${training.hidden_dim}
+      --epochs ${training.epochs}
+      --patience ${training.patience}
+      --lr ${training.lr}
+      --model-name ${data.vman}_trained_model_input-1_output-4_hidden-${training.hidden_dim}
+    deps:
+      - data/fba_data_${data.vman}_${data.condition}.npz
+      - scripts/train_surrogate.py
+      - src/
+    params:
+      - training.hidden_dim
+      - training.epochs
+      - training.patience
+      - training.lr
+    outs:
+      - trained_models/${data.vman}_trained_model_input-1_output-4_hidden-${training.hidden_dim}.pt
+
+  optimize:
+    cmd: >
+      python scripts/optimize_vman.py
+      --checkpoint trained_models/${data.vman}_trained_model_input-1_output-4_hidden-${training.hidden_dim}.pt
+      --t-start ${optimize.t_start}
+      --t-end ${optimize.t_end}
+      --num-intervals ${optimize.num_intervals}
+      --n-eval ${optimize.n_eval}
+      --bounds-lower ${optimize.bounds_lower}
+      --bounds-upper ${optimize.bounds_upper}
+      --initial-state ${optimize.initial_state}
+      --output-path results/optimize_vman_${data.vman}_hidden-${training.hidden_dim}_tend-${optimize.t_end}_N-${optimize.num_intervals}.npz
+      --logs-path results/optimize_vman_${data.vman}_hidden-${training.hidden_dim}_tend-${optimize.t_end}_N-${optimize.num_intervals}_logs.npz
+    deps:
+      - trained_models/${data.vman}_trained_model_input-1_output-4_hidden-${training.hidden_dim}.pt
+      - scripts/optimize_vman.py
+      - src/
+    params:
+      - optimize
+    outs:
+      - results/optimize_vman_${data.vman}_hidden-${training.hidden_dim}_tend-${optimize.t_end}_N-${optimize.num_intervals}.npz
+      - results/optimize_vman_${data.vman}_hidden-${training.hidden_dim}_tend-${optimize.t_end}_N-${optimize.num_intervals}_logs.npz
+
+  plot:
+    cmd: >
+      python scripts/plot_optimize_vman.py
+      --results results/optimize_vman_${data.vman}_hidden-${training.hidden_dim}_tend-${optimize.t_end}_N-${optimize.num_intervals}.npz
+      --logs results/optimize_vman_${data.vman}_hidden-${training.hidden_dim}_tend-${optimize.t_end}_N-${optimize.num_intervals}_logs.npz
+      --outdir plots/tend-${optimize.t_end}_N-${optimize.num_intervals}
+    deps:
+      - results/optimize_vman_${data.vman}_hidden-${training.hidden_dim}_tend-${optimize.t_end}_N-${optimize.num_intervals}.npz
+      - results/optimize_vman_${data.vman}_hidden-${training.hidden_dim}_tend-${optimize.t_end}_N-${optimize.num_intervals}_logs.npz
+      - scripts/plot_optimize_vman.py
+    outs:
+      - plots/tend-${optimize.t_end}_N-${optimize.num_intervals}/

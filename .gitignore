@@ -1,6 +1,10 @@
 # Custom
 data/
 plots/
+trained_models/
+results/
+plots/
+model/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -209,3 +213,8 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Generated artifacts
+results/
+plots/
+/plots

@@ -29,6 +29,9 @@ class SurrogateNN(nn.Module):
 
     def __init__(self, input_dim=1, hidden_dim=5, output_dim=3):
         super().__init__()
+        self.input_dim = input_dim
+        self.hidden_dim = hidden_dim
+        self.output_dim = output_dim
 
         # Define the network as a sequential stack of layers
         self.net = nn.Sequential(
@@ -189,5 +192,4 @@ def train_model(model, X_train, Y_train, X_val, Y_val,
         model.load_state_dict(best_model_state)
 
     return model, train_losses, val_losses
-
 
