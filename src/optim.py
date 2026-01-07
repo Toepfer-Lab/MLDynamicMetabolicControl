@@ -180,4 +180,4 @@ def optimize_vman(
             )
 
     # Return best polished result as the main result, plus logs and de_result
-    return best_local, logs, de_result
+    return best_local, logs
