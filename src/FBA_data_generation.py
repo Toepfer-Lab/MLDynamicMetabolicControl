@@ -1,6 +1,8 @@
 import numpy as np
 import os
 
+from flux_config import FLUX_LABELS, FLUX_RXN_IDS
+
 def generate_fba_data(model, vman, file_path=None, n_samples=10000):
     """
     Generate steady-state FBA data for a given control flux (vman).
@@ -22,7 +24,7 @@ def generate_fba_data(model, vman, file_path=None, n_samples=10000):
     X : list of [float]
         List of feasible vman values (each wrapped in a list for ML compatibility).
     Y : list of [float]
-        List of corresponding output flux vectors [v_etoh, v_glc, v_co2, v_biomass].
+        List of corresponding output flux vectors ordered by FLUX_RXN_IDS.
     feasibility_dict : dict
         Dictionary mapping every sampled vman_value → True (feasible) or False (infeasible).
     """
@@ -65,20 +67,18 @@ def generate_fba_data(model, vman, file_path=None, n_samples=10000):
         solution = model.optimize()
         if solution.status == "optimal":
             X.append([v])
-            Y.append([
-                solution.fluxes.get("EX_etoh_e", 0.0),
-                solution.fluxes.get("EX_glc__D_e", 0.0),
-                solution.fluxes.get("EX_co2_e", 0.0),
-                solution.fluxes.get("Biomass_Ecoli_core", 0.0),
-            ])
+            Y.append([solution.fluxes.get(rxn_id, 0.0) for rxn_id in FLUX_RXN_IDS])
     
     if file_path is not None:
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
-        np.savez_compressed(file_path, 
-                    X=np.array(X), 
-                    Y=np.array(Y), 
-                    feasible_range = feasible_range
-                    )
+        np.savez_compressed(
+            file_path,
+            X=np.array(X),
+            Y=np.array(Y),
+            feasible_range=feasible_range,
+            flux_order=np.array(FLUX_RXN_IDS),
+            flux_labels=np.array(FLUX_LABELS),
+        )
     return X, Y, feasible_range
 
 def list_infeasible_regions(feasibility_dict, rxn_id):
@@ -133,4 +133,3 @@ def is_feasible(vman, infeasible_regions):
         if lower <= vman <= upper:
             return False
     return True
-

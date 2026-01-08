@@ -3,6 +3,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+from flux_config import FLUX_LABELS
+
 def plot_flux_space(X, Y, vman_id="PFK", output_labels=None):
     """
     Plot exchange fluxes vs vman values.
@@ -25,7 +27,10 @@ def plot_flux_space(X, Y, vman_id="PFK", output_labels=None):
 
     # If not provided, create default labels
     if output_labels is None:
-        output_labels = [f"Flux {i}" for i in range(n_outputs)]
+        if n_outputs == len(FLUX_LABELS):
+            output_labels = list(FLUX_LABELS)
+        else:
+            output_labels = [f"Flux {i}" for i in range(n_outputs)]
 
     plt.figure(figsize=(8, 5))
     for i in range(n_outputs):

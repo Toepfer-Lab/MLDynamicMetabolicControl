@@ -10,8 +10,8 @@ stages:
       size: 3439
     - path: src/
       hash: md5
-      md5: 12b1d9ca985c7fe5b78f01504d6cc227.dir
-      size: 41443
+      md5: f1b0660ae96a298b2233a71e11e2933f.dir
+      size: 42543
       nfiles: 13
     params:
       params.yaml:
@@ -37,8 +37,8 @@ stages:
       size: 4573
     - path: src/
       hash: md5
-      md5: 12b1d9ca985c7fe5b78f01504d6cc227.dir
-      size: 41443
+      md5: f1b0660ae96a298b2233a71e11e2933f.dir
+      size: 42543
       nfiles: 13
     params:
       params.yaml:
@@ -49,13 +49,13 @@ stages:
     outs:
     - path: trained_models/ACKr_trained_model_input-1_output-4_hidden-4.pt
       hash: md5
-      md5: 20593132baa85a740ad20eda3cf059d5
+      md5: d3f76f03e7a17df3fc1bb14948cf6609
       size: 4431
   optimize:
     cmd: "python scripts/optimize_vman.py --checkpoint trained_models/ACKr_trained_model_input-1_output-4_hidden-4.pt
-      --t-start 0.0 --t-end 12 --num-intervals 40 --n-eval 1000 --bounds-lower -32.0
-      --bounds-upper 12.0 --initial-state 10.0 0.0 0.01 --output-path results/optimize_vman_ACKr_hidden-4_tend-12_N-40.npz
-      --logs-path results/optimize_vman_ACKr_hidden-4_tend-12_N-40_logs.npz\n"
+      --t-start 0.0 --t-end 12.0 --num-intervals 20 --n-eval 1000 --bounds-lower -32.0
+      --bounds-upper 12.0 --initial-state 10.0 0.0 0.01 --output-path results/optimize_vman_ACKr_hidden-4_tend-12.0_N-20.npz
+      --logs-path results/optimize_vman_ACKr_hidden-4_tend-12.0_N-20_logs.npz\n"
     deps:
     - path: scripts/optimize_vman.py
       hash: md5
@@ -68,46 +68,47 @@ stages:
       nfiles: 13
     - path: trained_models/ACKr_trained_model_input-1_output-4_hidden-4.pt
       hash: md5
-      md5: 20593132baa85a740ad20eda3cf059d5
+      md5: d3f76f03e7a17df3fc1bb14948cf6609
       size: 4431
     params:
       params.yaml:
         optimize:
           t_start: 0.0
-          t_end: 12
-          num_intervals: 40
+          t_end: 12.0
+          num_intervals: 20
           n_eval: 1000
           bounds_lower: -32.0
           bounds_upper: 12.0
           initial_state: 10.0 0.0 0.01
     outs:
-    - path: results/optimize_vman_ACKr_hidden-4_tend-12_N-40.npz
+    - path: results/optimize_vman_ACKr_hidden-4_tend-12.0_N-20.npz
       hash: md5
-      md5: 97d371485613fcbac72d7d8e9e75f278
-      size: 12928
-    - path: results/optimize_vman_ACKr_hidden-4_tend-12_N-40_logs.npz
+      md5: e58cea17356dd87197c0e550cc30d7f3
+      size: 12730
+    - path: results/optimize_vman_ACKr_hidden-4_tend-12.0_N-20_logs.npz
       hash: md5
-      md5: b45038f541aab56f9dc6c5b73eac3b30
-      size: 23955602
+      md5: 179e0743c01e132d1e4e8e14bdd269d0
+      size: 10602376
   plot:
-    cmd: "python scripts/plot_optimize_vman.py --results results/optimize_vman_ACKr_hidden-4_tend-12_N-40.npz
-      --logs results/optimize_vman_ACKr_hidden-4_tend-12_N-40_logs.npz --outdir plots/tend-12_N-40\n"
+    cmd: "python scripts/plot_optimize_vman.py --results results/optimize_vman_ACKr_hidden-4_tend-12.0_N-20.npz
+      --logs results/optimize_vman_ACKr_hidden-4_tend-12.0_N-20_logs.npz --outdir
+      plots/tend-12.0_N-20\n"
     deps:
-    - path: results/optimize_vman_ACKr_hidden-4_tend-12_N-40.npz
+    - path: results/optimize_vman_ACKr_hidden-4_tend-12.0_N-20.npz
       hash: md5
-      md5: db2f6ca952855222f8c33709bedca233
-      size: 13047
-    - path: results/optimize_vman_ACKr_hidden-4_tend-12_N-40_logs.npz
+      md5: e58cea17356dd87197c0e550cc30d7f3
+      size: 12730
+    - path: results/optimize_vman_ACKr_hidden-4_tend-12.0_N-20_logs.npz
       hash: md5
-      md5: eff8d8f09dce7b882df3ecf4ef977eee
-      size: 23995882
+      md5: 179e0743c01e132d1e4e8e14bdd269d0
+      size: 10602376
     - path: scripts/plot_optimize_vman.py
       hash: md5
       md5: 9d23b41558f5a005acbb088b189fa710
       size: 6868
     outs:
-    - path: plots/tend-12_N-40/
+    - path: plots/tend-12.0_N-20/
       hash: md5
-      md5: 5711b6e254f3cdcd2aec51931b912024.dir
-      size: 1010116
+      md5: 7ec00dbac4b265dc936076d89e95c9fb.dir
+      size: 866800
       nfiles: 2

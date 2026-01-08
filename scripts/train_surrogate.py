@@ -69,6 +69,8 @@ def main():
     data = np.load(data_path, allow_pickle=True)
     X, Y = data["X"], data["Y"]
     feasible_range = data["feasible_range"]
+    flux_order = data["flux_order"] if "flux_order" in data else None
+    flux_labels = data["flux_labels"] if "flux_labels" in data else None
 
     x_scaler, y_scaler, X_train, Y_train, X_val, Y_val, X_test, Y_test = surrogateNN.ML_data_prep(
         X, Y, test_size=args.test_size, val_size=args.val_size
@@ -116,6 +118,10 @@ def main():
         "lr": args.lr,
         "data_path": str(data_path),
     }
+    if flux_order is not None:
+        metadata["flux_order"] = flux_order.tolist()
+    if flux_labels is not None:
+        metadata["flux_labels"] = flux_labels.tolist()
     save_surrogate_checkpoint(model, x_scaler, y_scaler, metadata, checkpoint_path)
 
     metrics_path = MODEL_DIR / f"{checkpoint_path.stem}_metrics.json"

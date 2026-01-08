@@ -14,8 +14,8 @@ training:
 
 optimize:
   t_start: 0.0
-  t_end: 12          # <-- change to 24.0 later
-  num_intervals: 40  # <-- change to 40 later
+  t_end: 12.0          # <-- change to 24.0 later
+  num_intervals: 20  # <-- change to 40 later
   n_eval: 1000
   bounds_lower: -32.0
   bounds_upper: 12.0

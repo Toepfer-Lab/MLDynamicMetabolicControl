@@ -17,6 +17,7 @@ if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
 import hybrid_model  # noqa: E402
+from flux_config import STATE_INDEX  # noqa: E402
 from optim import piecewise_constant_control, optimize_vman  # noqa: E402
 from runtime_utils import RESULTS_DIR, ensure_output_dirs, load_surrogate_checkpoint  # noqa: E402
 from surrogateNN import SurrogateNN  # noqa: E402
@@ -160,7 +161,7 @@ def main():
     opt_vman_values=opt_vman_values,
     control_times=control_times,
     t_eval_points=t_eval_points,
-    biomass=sol_opt.y[2, :] if sol_opt.success else np.array([]),
+    biomass=sol_opt.y[STATE_INDEX["biomass"], :] if sol_opt.success else np.array([]),
     
     solver_success=sol_opt.success,
     metadata=metadata,

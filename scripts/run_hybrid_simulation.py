@@ -17,6 +17,7 @@ if str(SRC_DIR) not in sys.path:
     sys.path.append(str(SRC_DIR))
 
 import hybrid_model  # noqa: E402
+from flux_config import STATE_INDEX  # noqa: E402
 from optim import piecewise_constant_control  # noqa: E402
 from runtime_utils import RESULTS_DIR, ensure_output_dirs, load_surrogate_checkpoint  # noqa: E402
 from surrogateNN import SurrogateNN  # noqa: E402
@@ -104,7 +105,7 @@ def main():
         metadata=metadata,
     )
 
-    final_biomass = sol.y[2, -1] if sol.success else float("nan")
+    final_biomass = sol.y[STATE_INDEX["biomass"], -1] if sol.success else float("nan")
     print(f"Simulation success: {sol.success}")
     print(f"Final biomass: {final_biomass:.4f}")
     print(f"Saved results to {output_path}")

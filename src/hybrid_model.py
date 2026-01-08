@@ -1,6 +1,8 @@
 import numpy as np
 import torch
 
+from flux_config import FLUX_INDEX
+
 def h(z):
     glucose = z[0]
     ethanol = z[1]
@@ -48,7 +50,10 @@ def hybrid_ode(t, z, vman_func, model_nn, x_scaler, y_scaler):
         vext = y_scaler.inverse_transform(vext_scaled).flatten()
 
     # Unpack predicted fluxes
-    v_etoh, v_glc, v_co2, v_bio = vext
+    v_etoh = vext[FLUX_INDEX["etoh"]]
+    v_glc = vext[FLUX_INDEX["glc"]]
+    v_co2 = vext[FLUX_INDEX["co2"]]
+    v_bio = vext[FLUX_INDEX["biomass"]]
 
     # Dynamic rate scaling (e.g., Michaelis-Menten / biomass-based)
     rate = biomass * h(z)
@@ -64,4 +69,3 @@ def hybrid_ode(t, z, vman_func, model_nn, x_scaler, y_scaler):
     dzdt[z <= 0] = np.maximum(dzdt[z <= 0], 0)
 
     return dzdt
-

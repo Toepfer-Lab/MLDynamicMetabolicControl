@@ -2,6 +2,7 @@ import numpy as np
 from scipy.integrate import solve_ivp
 from scipy.optimize import minimize, differential_evolution
 
+from flux_config import STATE_INDEX
 def time_weights(t, t_end, kind="exp", k=6.0, p=3.0, eps=1e-12):
     """
     Docstring for time_weights
@@ -36,7 +37,7 @@ def objective_fn(sol, t_span):
     """
     t0, t1 = t_span
     t = sol.t
-    B = sol.y[2, :]
+    B = sol.y[STATE_INDEX["biomass"], :]
     weight_kind = "exp"
     weight_k = 6.0
     weight_p = 3.0
@@ -103,7 +104,7 @@ def optimize_vman(
         sol = solve_ivp(rhs, t_span, z0, t_eval=t_eval_points, method="RK45")
 
         if sol.success:
-            final_biomass = sol.y[2, -1]
+            final_biomass = sol.y[STATE_INDEX["biomass"], -1]
             score = objective_fn(sol, t_span)
 
             store_full = (
@@ -127,7 +128,7 @@ def optimize_vman(
             }
             if store_full:
                 entry["t"] = sol.t
-                entry["biomass"] = sol.y[2, :]
+                entry["biomass"] = sol.y[STATE_INDEX["biomass"], :]
 
             logs.append(entry)
 
