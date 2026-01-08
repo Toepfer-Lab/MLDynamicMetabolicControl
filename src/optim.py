@@ -2,10 +2,53 @@ import numpy as np
 from scipy.integrate import solve_ivp
 from scipy.optimize import minimize, differential_evolution
 
+def time_weights(t, t_end, kind="exp", k=6.0, p=3.0, eps=1e-12):
+    """
+    Docstring for time_weights
+    
+    w(t) scaling from 0 to 1 over the given timespan
 
-def objective_fn(sol):
-    return sol.y[2, -1]  # biomass final
+    :param t: 
+    :param t0: Description
+    :param t1: Description
+    :param kind: exponential, power law, linear, constant
+    """
+    t = np.asarray(t, dtype=float)
+    s = np.clip(t /t_end, 0, 1)
+    
+    if kind == "exp":
+        #normalized exponential ramp
+        return (np.exp(k * s) -1.0) / (np.exp(k) - 1.0 + eps)
+    if kind == "pow":
+        return s ** p
+    if kind == "linear":
+        return s
+    if kind == "const":
+        return 1
+    raise ValueError(f"Unknown weight kind: {kind}")
 
+
+
+def objective_fn(sol, t_span):
+    """
+    Return a scalar score to maximize.
+    Late-weighted average biomass (normalized), computed from sol.t and sol.y[2].
+    """
+    t0, t1 = t_span
+    t = sol.t
+    B = sol.y[2, :]
+    weight_kind = "exp"
+    weight_k = 6.0
+    weight_p = 3.0
+
+    w = time_weights(t, t1, kind=weight_kind, k=weight_k, p=weight_p)
+
+    # avoid all-zero weights if something goes weird
+    w_sum = np.sum(w)
+    if w_sum <= 0:
+        return float(B[-1])  # fallback to final biomass
+
+    return float(np.sum(w * B) / w_sum)
 
 def piecewise_constant_control(control_times, values):
     values = np.asarray(values)
@@ -61,6 +104,7 @@ def optimize_vman(
 
         if sol.success:
             final_biomass = sol.y[2, -1]
+            score = objective_fn(sol, t_span)
 
             store_full = (
                 log_full_every_k is not None
@@ -79,6 +123,7 @@ def optimize_vman(
                 "vman_values": np.copy(vman_values),
                 "final_biomass": float(final_biomass),
                 "store_full": bool(store_full),
+                "score": float(score),
             }
             if store_full:
                 entry["t"] = sol.t
@@ -87,18 +132,18 @@ def optimize_vman(
             logs.append(entry)
 
         eval_idx += 1
-        return sol
+        return sol, score
 
     def cost(vman_values):
         key = _cache_key(vman_values)
         if key in cache:
             return cache[key]
 
-        sol = simulate(np.asarray(vman_values, dtype=float))
+        sol, score = simulate(np.asarray(vman_values, dtype=float))
         if sol is None or not sol.success:
             val = np.inf
         else:
-            val = -objective_fn(sol)
+            val = -score
 
         cache[key] = val
         if verbose and np.isfinite(val):

@@ -10,8 +10,8 @@ stages:
       size: 3439
     - path: src/
       hash: md5
-      md5: 5ed792064fc7a66ead62c9dac342440f.dir
-      size: 40200
+      md5: 12b1d9ca985c7fe5b78f01504d6cc227.dir
+      size: 41443
       nfiles: 13
     params:
       params.yaml:
@@ -37,8 +37,8 @@ stages:
       size: 4573
     - path: src/
       hash: md5
-      md5: 5ed792064fc7a66ead62c9dac342440f.dir
-      size: 40200
+      md5: 12b1d9ca985c7fe5b78f01504d6cc227.dir
+      size: 41443
       nfiles: 13
     params:
       params.yaml:
@@ -49,7 +49,7 @@ stages:
     outs:
     - path: trained_models/ACKr_trained_model_input-1_output-4_hidden-4.pt
       hash: md5
-      md5: 6942e2fa450351cb24eec5b0c3c4e749
+      md5: 20593132baa85a740ad20eda3cf059d5
       size: 4431
   optimize:
     cmd: "python scripts/optimize_vman.py --checkpoint trained_models/ACKr_trained_model_input-1_output-4_hidden-4.pt
@@ -63,12 +63,12 @@ stages:
       size: 5666
     - path: src/
       hash: md5
-      md5: 5ed792064fc7a66ead62c9dac342440f.dir
-      size: 40200
+      md5: f1b0660ae96a298b2233a71e11e2933f.dir
+      size: 42543
       nfiles: 13
     - path: trained_models/ACKr_trained_model_input-1_output-4_hidden-4.pt
       hash: md5
-      md5: 6942e2fa450351cb24eec5b0c3c4e749
+      md5: 20593132baa85a740ad20eda3cf059d5
       size: 4431
     params:
       params.yaml:
@@ -83,12 +83,12 @@ stages:
     outs:
     - path: results/optimize_vman_ACKr_hidden-4_tend-12_N-40.npz
       hash: md5
-      md5: db2f6ca952855222f8c33709bedca233
-      size: 13047
+      md5: 97d371485613fcbac72d7d8e9e75f278
+      size: 12928
     - path: results/optimize_vman_ACKr_hidden-4_tend-12_N-40_logs.npz
       hash: md5
-      md5: eff8d8f09dce7b882df3ecf4ef977eee
-      size: 23995882
+      md5: b45038f541aab56f9dc6c5b73eac3b30
+      size: 23955602
   plot:
     cmd: "python scripts/plot_optimize_vman.py --results results/optimize_vman_ACKr_hidden-4_tend-12_N-40.npz
       --logs results/optimize_vman_ACKr_hidden-4_tend-12_N-40_logs.npz --outdir plots/tend-12_N-40\n"
