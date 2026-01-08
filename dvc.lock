@@ -10,9 +10,9 @@ stages:
       size: 3439
     - path: src/
       hash: md5
-      md5: f1b0660ae96a298b2233a71e11e2933f.dir
-      size: 42543
-      nfiles: 13
+      md5: 13eaa90692b71427085105f79cfad4f1.dir
+      size: 44550
+      nfiles: 15
     params:
       params.yaml:
         data.condition: anaerobic
@@ -21,25 +21,25 @@ stages:
     outs:
     - path: data/fba_data_ACKr_anaerobic.npz
       hash: md5
-      md5: e3c93baf815dc7bd37dfa0deb58869ef
-      size: 20030
+      md5: 1958ce0f0dd7cdcebfe9f80486db90b4
+      size: 20531
   train_surrogate:
     cmd: "python scripts/train_surrogate.py --vman ACKr --condition anaerobic --hidden-dim
       4 --epochs 500 --patience 50 --lr 0.001 --model-name ACKr_trained_model_input-1_output-4_hidden-4\n"
     deps:
     - path: data/fba_data_ACKr_anaerobic.npz
       hash: md5
-      md5: e3c93baf815dc7bd37dfa0deb58869ef
-      size: 20030
+      md5: 1958ce0f0dd7cdcebfe9f80486db90b4
+      size: 20531
     - path: scripts/train_surrogate.py
       hash: md5
-      md5: 2ed2d008fa851e5b497dc4ccdcecf5eb
-      size: 4573
+      md5: 49b762e45d1d41fa991d77845d383efb
+      size: 4887
     - path: src/
       hash: md5
-      md5: f1b0660ae96a298b2233a71e11e2933f.dir
-      size: 42543
-      nfiles: 13
+      md5: 13eaa90692b71427085105f79cfad4f1.dir
+      size: 44550
+      nfiles: 15
     params:
       params.yaml:
         training.epochs: 500
@@ -49,8 +49,8 @@ stages:
     outs:
     - path: trained_models/ACKr_trained_model_input-1_output-4_hidden-4.pt
       hash: md5
-      md5: d3f76f03e7a17df3fc1bb14948cf6609
-      size: 4431
+      md5: 3ae06e47bc50297f06acdb1c73d79352
+      size: 4623
   optimize:
     cmd: "python scripts/optimize_vman.py --checkpoint trained_models/ACKr_trained_model_input-1_output-4_hidden-4.pt
       --t-start 0.0 --t-end 12.0 --num-intervals 20 --n-eval 1000 --bounds-lower -32.0
@@ -59,17 +59,17 @@ stages:
     deps:
     - path: scripts/optimize_vman.py
       hash: md5
-      md5: f5b9bd28be8b180fafffeab0eaaad6d2
-      size: 5666
+      md5: d96672385131785226c646172de93eda
+      size: 5737
     - path: src/
       hash: md5
-      md5: f1b0660ae96a298b2233a71e11e2933f.dir
-      size: 42543
-      nfiles: 13
+      md5: 88e84cd809ee7580d5cdde58f670431b.dir
+      size: 44554
+      nfiles: 15
     - path: trained_models/ACKr_trained_model_input-1_output-4_hidden-4.pt
       hash: md5
-      md5: d3f76f03e7a17df3fc1bb14948cf6609
-      size: 4431
+      md5: 3ae06e47bc50297f06acdb1c73d79352
+      size: 4623
     params:
       params.yaml:
         optimize:
@@ -83,12 +83,12 @@ stages:
     outs:
     - path: results/optimize_vman_ACKr_hidden-4_tend-12.0_N-20.npz
       hash: md5
-      md5: e58cea17356dd87197c0e550cc30d7f3
-      size: 12730
+      md5: 9447509baae37ce088a6484f28be025c
+      size: 12927
     - path: results/optimize_vman_ACKr_hidden-4_tend-12.0_N-20_logs.npz
       hash: md5
-      md5: 179e0743c01e132d1e4e8e14bdd269d0
-      size: 10602376
+      md5: 926cdfd9ddbebcdecc0b445463456c5b
+      size: 10671623
   plot:
     cmd: "python scripts/plot_optimize_vman.py --results results/optimize_vman_ACKr_hidden-4_tend-12.0_N-20.npz
       --logs results/optimize_vman_ACKr_hidden-4_tend-12.0_N-20_logs.npz --outdir
@@ -96,12 +96,12 @@ stages:
     deps:
     - path: results/optimize_vman_ACKr_hidden-4_tend-12.0_N-20.npz
       hash: md5
-      md5: e58cea17356dd87197c0e550cc30d7f3
-      size: 12730
+      md5: 9447509baae37ce088a6484f28be025c
+      size: 12927
     - path: results/optimize_vman_ACKr_hidden-4_tend-12.0_N-20_logs.npz
       hash: md5
-      md5: 179e0743c01e132d1e4e8e14bdd269d0
-      size: 10602376
+      md5: 926cdfd9ddbebcdecc0b445463456c5b
+      size: 10671623
     - path: scripts/plot_optimize_vman.py
       hash: md5
       md5: 9d23b41558f5a005acbb088b189fa710
@@ -109,6 +109,6 @@ stages:
     outs:
     - path: plots/tend-12.0_N-20/
       hash: md5
-      md5: 7ec00dbac4b265dc936076d89e95c9fb.dir
-      size: 866800
+      md5: c14a3b64d9f79ad1b45a68180943b8d5.dir
+      size: 959228
       nfiles: 2
