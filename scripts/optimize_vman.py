@@ -167,6 +167,7 @@ def main():
     obj_idx = STATE_INDEX[args.objective]
     objective_curve = sol_opt.y[obj_idx, :] if sol_opt.success else np.array([])
     biomass_curve = sol_opt.y[STATE_INDEX["biomass"], :] if sol_opt.success else np.array([])
+    glucose_curve = sol_opt.y[STATE_INDEX["glucose"], :] if sol_opt.success else np.array([])
 
     np.savez_compressed(
         output_path,
@@ -176,6 +177,7 @@ def main():
         objective=args.objective,
         objective_curve=objective_curve,
         biomass=biomass_curve,
+        glucose=glucose_curve,
         solver_success=sol_opt.success,
         metadata=metadata,
     )

@@ -218,7 +218,38 @@ def main():
             transform=ax2.transAxes, va="top"
         )
 
-    ax2.set_ylabel(curve_label)
+    if objective != "biomass":
+        if "t_eval_points" in res:
+            t_eval = np.asarray(res["t_eval_points"], dtype=float)
+        else:
+            t_eval = np.array([])
+
+        biomass_curve = np.asarray(res["biomass"], dtype=float) if "biomass" in res else np.array([])
+        glucose_curve = np.asarray(res["glucose"], dtype=float) if "glucose" in res else np.array([])
+
+        if t_eval.size and biomass_curve.size:
+            ax2.plot(
+                t_eval,
+                biomass_curve,
+                color="tab:blue",
+                linestyle="--",
+                linewidth=1.5,
+                label="Biomass (optimized)",
+            )
+        if t_eval.size and glucose_curve.size:
+            ax2.plot(
+                t_eval,
+                glucose_curve,
+                color="tab:orange",
+                linestyle=":",
+                linewidth=1.5,
+                label="Glucose (optimized)",
+            )
+
+    if objective != "biomass" and (("biomass" in res) or ("glucose" in res)):
+        ax2.set_ylabel("Concentration / objective")
+    else:
+        ax2.set_ylabel(curve_label)
 
     # Combined legend (handles from both axes)
     h1, l1 = ax1.get_legend_handles_labels()

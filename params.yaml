@@ -1,7 +1,7 @@
 # params.yaml
 
 data:
-  model_path: model/iML1515.xml
+  model_path: model/iCH360.xml
   vman: ACKr
   condition: anaerobic
   n_samples: 1000
@@ -14,10 +14,10 @@ training:
 
 optimize:
   t_start: 0.0
-  t_end: 12.0          # <-- change to 24.0 later
-  num_intervals: 40  # <-- change to 40 later
+  t_end: 100.0          # <-- change to 24.0 later
+  num_intervals: 10  # <-- change to 40 later
   n_eval: 1000
-  objective: biomass
-  bounds_lower: -30.0
-  bounds_upper: 12.0
+  objective: ethanol
+  bounds_lower: -9.0
+  bounds_upper: -1.0
   initial_state: 10.0 0.0 0.01
