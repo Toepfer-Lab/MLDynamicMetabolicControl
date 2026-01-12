@@ -30,14 +30,21 @@ def time_weights(t, t_end, kind="exp", k=6.0, p=3.0, eps=1e-12):
 
 
 
-def objective_fn(sol, t_span):
+def _objective_state_index(objective):
+    if objective not in STATE_INDEX:
+        raise ValueError(f"Unknown objective '{objective}'. Valid options: {sorted(STATE_INDEX.keys())}")
+    return STATE_INDEX[objective]
+
+
+def objective_fn(sol, t_span, objective="biomass"):
     """
     Return a scalar score to maximize.
-    Late-weighted average biomass (normalized), computed from sol.t and sol.y[2].
+    Late-weighted average of the objective state (normalized), computed from sol.t.
     """
     t0, t1 = t_span
     t = sol.t
-    B = sol.y[STATE_INDEX["biomass"], :]
+    obj_idx = _objective_state_index(objective)
+    obj_vals = sol.y[obj_idx, :]
     weight_kind = "exp"
     weight_k = 6.0
     weight_p = 3.0
@@ -47,9 +54,9 @@ def objective_fn(sol, t_span):
     # avoid all-zero weights if something goes weird
     w_sum = np.sum(w)
     if w_sum <= 0:
-        return float(B[-1])  # fallback to final biomass
+        return float(obj_vals[-1])  # fallback to final objective value
 
-    return float(np.sum(w * B) / w_sum)
+    return float(np.sum(w * obj_vals) / w_sum)
 
 def piecewise_constant_control(control_times, values):
     values = np.asarray(values)
@@ -72,6 +79,7 @@ def optimize_vman(
     bounds,
     x_scaler,
     y_scaler,
+    objective="biomass",
     initial_guess=None,
     verbose=False,
     log_full_every_k=10,
@@ -104,8 +112,9 @@ def optimize_vman(
         sol = solve_ivp(rhs, t_span, z0, t_eval=t_eval_points, method="RK45")
 
         if sol.success:
-            final_biomass = sol.y[STATE_INDEX["biomass"], -1]
-            score = objective_fn(sol, t_span)
+            obj_idx = _objective_state_index(objective)
+            final_obj = sol.y[obj_idx, -1]
+            score = objective_fn(sol, t_span, objective=objective)
 
             store_full = (
                 log_full_every_k is not None
@@ -113,22 +122,25 @@ def optimize_vman(
                 and (eval_idx % log_full_every_k == 0)
             )
 
-            is_new_best = final_biomass > best_final
+            is_new_best = final_obj > best_final
             if is_new_best:
-                best_final = final_biomass
+                best_final = final_obj
                 if log_best_full:
                     store_full = True
 
             entry = {
                 "eval_idx": eval_idx,
                 "vman_values": np.copy(vman_values),
-                "final_biomass": float(final_biomass),
+                "final_objective": float(final_obj),
+                "objective": objective,
                 "store_full": bool(store_full),
                 "score": float(score),
             }
             if store_full:
                 entry["t"] = sol.t
-                entry["biomass"] = sol.y[STATE_INDEX["biomass"], :]
+                entry["objective_curve"] = sol.y[obj_idx, :]
+                if objective == "biomass":
+                    entry["biomass"] = sol.y[STATE_INDEX["biomass"], :]
 
             logs.append(entry)
 
@@ -148,7 +160,7 @@ def optimize_vman(
 
         cache[key] = val
         if verbose and np.isfinite(val):
-            print(f"[eval {eval_idx-1}] biomass={-val:.6f} cost={val:.6f}")
+            print(f"[eval {eval_idx-1}] {objective}={-val:.6f} cost={val:.6f}")
         return val
 
     # If user doesn't pass an initial guess, use midpoints

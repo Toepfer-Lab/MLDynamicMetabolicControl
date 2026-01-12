@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Optimize the manipulated flux trajectory (vman) to maximize biomass.
+Optimize the manipulated flux trajectory (vman) to maximize a chosen state objective.
 """
 
 import argparse
@@ -81,6 +81,13 @@ def parse_args():
         help="Print diagnostic information during optimization",
     )
     parser.add_argument(
+        "--objective",
+        type=str,
+        default="biomass",
+        choices=tuple(STATE_INDEX.keys()),
+        help="Objective state to maximize (e.g., biomass or ethanol)",
+    )
+    parser.add_argument(
         "--log-full-every-k",
         type=int,
         default=10,
@@ -128,6 +135,7 @@ def main():
         bounds=rxn_bounds,
         x_scaler=x_scaler,
         y_scaler=y_scaler,
+        objective=args.objective,
         log_full_every_k=args.log_full_every_k,
         verbose=args.verbose,
         global_maxiter=80,
@@ -156,16 +164,21 @@ def main():
     output_path = args.output_path or (RESULTS_DIR / f"optimize_vman_{args.checkpoint.stem}.npz")
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
+    obj_idx = STATE_INDEX[args.objective]
+    objective_curve = sol_opt.y[obj_idx, :] if sol_opt.success else np.array([])
+    biomass_curve = sol_opt.y[STATE_INDEX["biomass"], :] if sol_opt.success else np.array([])
+
     np.savez_compressed(
-    output_path,
-    opt_vman_values=opt_vman_values,
-    control_times=control_times,
-    t_eval_points=t_eval_points,
-    biomass=sol_opt.y[STATE_INDEX["biomass"], :] if sol_opt.success else np.array([]),
-    
-    solver_success=sol_opt.success,
-    metadata=metadata,
-)
+        output_path,
+        opt_vman_values=opt_vman_values,
+        control_times=control_times,
+        t_eval_points=t_eval_points,
+        objective=args.objective,
+        objective_curve=objective_curve,
+        biomass=biomass_curve,
+        solver_success=sol_opt.success,
+        metadata=metadata,
+    )
 
     logs_path = args.logs_path or (RESULTS_DIR / f"optimize_vman_{args.checkpoint.stem}_logs.npz")
     logs_path.parent.mkdir(parents=True, exist_ok=True)
@@ -175,8 +188,8 @@ def main():
     print("Optimizer message:", result.message)
     print("nfev:", result.nfev, "nit:", result.nit)
     print(f"Optimization success: {result.success}, final objective {-result.fun:.4f}")
-    final_biomass = -result.fun
-    print(f"Optimal final biomass: {final_biomass:.4f}")
+    final_obj = -result.fun
+    print(f"Optimal final {args.objective}: {final_obj:.4f}")
     print(f"Results saved to {output_path}")
 
 

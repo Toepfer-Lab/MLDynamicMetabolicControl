@@ -49,6 +49,7 @@ stages:
       --t-end ${optimize.t_end}
       --num-intervals ${optimize.num_intervals}
       --n-eval ${optimize.n_eval}
+      --objective ${optimize.objective}
       --bounds-lower ${optimize.bounds_lower}
       --bounds-upper ${optimize.bounds_upper}
       --initial-state ${optimize.initial_state}
