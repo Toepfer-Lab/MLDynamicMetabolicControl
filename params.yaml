@@ -1,14 +1,14 @@
 # params.yaml
 
 data:
-  model_path: model/iCH360.xml
+  model_path: model/iML1515.xml
   vman: ACKr
   condition: anaerobic
-  n_samples: 1000
+  n_samples: 1001
 
 training:
   hidden_dim: 4
-  epochs: 500
+  epochs: 501
   patience: 50
   lr: 0.001
 
@@ -18,6 +18,6 @@ optimize:
   num_intervals: 10  # <-- change to 40 later
   n_eval: 1000
   objective: ethanol
-  bounds_lower: -9.0
-  bounds_upper: -1.0
+  bounds_lower: -9.5
+  bounds_upper: -0.5
   initial_state: 10.0 0.0 0.01

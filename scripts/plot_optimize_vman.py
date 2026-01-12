@@ -234,7 +234,7 @@ def main():
                 color="tab:blue",
                 linestyle="--",
                 linewidth=1.5,
-                label="Biomass (optimized)",
+                label="Biomass",
             )
         if t_eval.size and glucose_curve.size:
             ax2.plot(
@@ -243,7 +243,7 @@ def main():
                 color="tab:orange",
                 linestyle=":",
                 linewidth=1.5,
-                label="Glucose (optimized)",
+                label="Glucose",
             )
 
     if objective != "biomass" and (("biomass" in res) or ("glucose" in res)):

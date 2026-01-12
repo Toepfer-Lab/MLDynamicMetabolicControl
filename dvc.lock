@@ -1,8 +1,8 @@
 schema: '2.0'
 stages:
   generate_data:
-    cmd: "python scripts/generate_fba_data.py --model-path model/iCH360.xml --vman
-      ACKr --condition anaerobic --n-samples 1000\n"
+    cmd: "python scripts/generate_fba_data.py --model-path model/iML1515.xml --vman
+      ACKr --condition anaerobic --n-samples 1001\n"
     deps:
     - path: scripts/generate_fba_data.py
       hash: md5
@@ -15,21 +15,21 @@ stages:
     params:
       params.yaml:
         data.condition: anaerobic
-        data.n_samples: 1000
+        data.n_samples: 1001
         data.vman: ACKr
     outs:
     - path: data/fba_data_ACKr_anaerobic.npz
       hash: md5
-      md5: 579812d77139bd8ef6a0b785ba62fffe
-      size: 16804
+      md5: 32895ed3f66f02a8fda0bdf6eed88e29
+      size: 20477
   train_surrogate:
     cmd: "python scripts/train_surrogate.py --vman ACKr --condition anaerobic --hidden-dim
-      4 --epochs 500 --patience 50 --lr 0.001 --model-name ACKr_trained_model_input-1_output-4_hidden-4\n"
+      4 --epochs 501 --patience 50 --lr 0.001 --model-name ACKr_trained_model_input-1_output-4_hidden-4\n"
     deps:
     - path: data/fba_data_ACKr_anaerobic.npz
       hash: md5
-      md5: 579812d77139bd8ef6a0b785ba62fffe
-      size: 16804
+      md5: 32895ed3f66f02a8fda0bdf6eed88e29
+      size: 20477
     - path: scripts/train_surrogate.py
       hash: md5
       md5: 49b762e45d1d41fa991d77845d383efb
@@ -48,14 +48,14 @@ stages:
       size: 6087
     params:
       params.yaml:
-        training.epochs: 500
+        training.epochs: 501
         training.hidden_dim: 4
         training.lr: 0.001
         training.patience: 50
     outs:
     - path: trained_models/ACKr_trained_model_input-1_output-4_hidden-4.pt
       hash: md5
-      md5: 39401020b99012ffdd252c93b3b3b893
+      md5: f90e3b78785ba133c13531acaff1f77a
       size: 4623
   optimize:
     cmd: "python scripts/optimize_vman.py --checkpoint trained_models/ACKr_trained_model_input-1_output-4_hidden-4.pt
@@ -65,8 +65,8 @@ stages:
     deps:
     - path: scripts/optimize_vman.py
       hash: md5
-      md5: 5e4346fa2209142445f38e4cb0deaf9b
-      size: 6262
+      md5: 8afc27409cca7bf4227fa162b6e1285b
+      size: 6387
     - path: src/
       hash: md5
       md5: 57ba11651312a7ee2eba24572bfbb7f6.dir
@@ -90,8 +90,8 @@ stages:
     outs:
     - path: results/optimize_vman_ACKr_hidden-4_tend-100.0_N-10.npz
       hash: md5
-      md5: 14ee0038541cac6b3fd707cbc5d1fbad
-      size: 14938
+      md5: e5dee12125edddcd0dcc510afba2b528
+      size: 19190
     - path: results/optimize_vman_ACKr_hidden-4_tend-100.0_N-10_logs.npz
       hash: md5
       md5: 08d0ac53ac6ede517aaff130b1816a25
@@ -103,19 +103,19 @@ stages:
     deps:
     - path: results/optimize_vman_ACKr_hidden-4_tend-100.0_N-10.npz
       hash: md5
-      md5: 14ee0038541cac6b3fd707cbc5d1fbad
-      size: 14938
+      md5: e5dee12125edddcd0dcc510afba2b528
+      size: 19190
     - path: results/optimize_vman_ACKr_hidden-4_tend-100.0_N-10_logs.npz
       hash: md5
       md5: 08d0ac53ac6ede517aaff130b1816a25
       size: 2419910
     - path: scripts/plot_optimize_vman.py
       hash: md5
-      md5: e6c18a56ec00fd6c172d44c8761cfa3c
-      size: 7818
+      md5: 9ed69eb03602f55c4da7fb17b83cdb66
+      size: 8911
     outs:
     - path: plots/tend-100.0_N-10/
       hash: md5
-      md5: 4bbd32a5dc3d095a5cd9a4809dfd2e31.dir
-      size: 353971
+      md5: b94d0a675fd1e8b96116c512c3e756d1.dir
+      size: 386627
       nfiles: 2
