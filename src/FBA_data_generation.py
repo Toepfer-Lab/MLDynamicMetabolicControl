@@ -37,6 +37,8 @@ def generate_fba_data(model, vman, file_path=None, n_samples=10000):
     feasibility_dict = {}  # Tracks whether each vman value is feasible
     feasible_points = []
 
+    print(f"MODEL OBJECTIVE: {model.objective}")
+
     for v in coarse_values:
         rxn.bounds = (v, v)
         solution = model.optimize()
