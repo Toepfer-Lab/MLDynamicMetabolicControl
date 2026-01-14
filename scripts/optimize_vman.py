@@ -56,18 +56,6 @@ def parse_args():
         help="Number of time points for solver outputs",
     )
     parser.add_argument(
-        "--bounds-lower",
-        type=float,
-        default=None,
-        help="Lower bound for vman (overrides metadata)",
-    )
-    parser.add_argument(
-        "--bounds-upper",
-        type=float,
-        default=None,
-        help="Upper bound for vman (overrides metadata)",
-    )
-    parser.add_argument(
         "--initial-state",
         type=float,
         nargs=3,
@@ -116,8 +104,8 @@ def main():
     model, x_scaler, y_scaler, metadata = load_surrogate_checkpoint(args.checkpoint, SurrogateNN)
     feasible_range = metadata.get("feasible_range")
 
-    lower = args.bounds_lower if args.bounds_lower is not None else (feasible_range[0] if feasible_range is not None else None)
-    upper = args.bounds_upper if args.bounds_upper is not None else (feasible_range[1] if feasible_range is not None else None)
+    lower = feasible_range[0]
+    upper = feasible_range[1]
     if lower is None or upper is None:
         raise ValueError("Bounds must be provided either via --bounds-lower/--bounds-upper or stored in metadata.")
 

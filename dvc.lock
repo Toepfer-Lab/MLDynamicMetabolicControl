@@ -1,8 +1,8 @@
 schema: '2.0'
 stages:
   generate_data:
-    cmd: "python scripts/generate_fba_data.py --model-path model/iML1515.xml --vman
-      ACKr --condition anaerobic --n-samples 1001\n"
+    cmd: "python scripts/generate_fba_data.py --model-path model/ECC2comp --vman ACKr
+      --condition anaerobic --n-samples 1001\n"
     deps:
     - path: scripts/generate_fba_data.py
       hash: md5
@@ -24,8 +24,8 @@ stages:
     outs:
     - path: data/fba_data_ACKr_anaerobic.npz
       hash: md5
-      md5: 36989c36e89179cb47dd369a0ac1817b
-      size: 28562
+      md5: 9db0d31a2b0b91afbb8681c4d6489cd4
+      size: 22356
   train_surrogate:
     cmd: "python scripts/train_surrogate.py --vman ACKr --condition anaerobic --hidden-dim
       4 --epochs 501 --patience 50 --lr 0.001 --model-name ACKr_trained_model_input-1_output-4_hidden-4\n"
