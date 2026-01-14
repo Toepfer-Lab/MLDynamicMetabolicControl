@@ -10,6 +10,7 @@ stages:
     deps:
       - scripts/generate_fba_data.py
       - src/FBA_data_generation.py
+      - src/flux_config.py
     params:
       - data.vman
       - data.condition

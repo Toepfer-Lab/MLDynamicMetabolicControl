@@ -14,10 +14,10 @@ training:
 
 optimize:
   t_start: 0.0
-  t_end: 100.0          # <-- change to 24.0 later
+  t_end: 40.0          # <-- change to 24.0 later
   num_intervals: 10  # <-- change to 40 later
   n_eval: 1000
   objective: ethanol
-  bounds_lower: -9.5
-  bounds_upper: -0.5
+  bounds_lower: -32.5
+  bounds_upper: -12.5
   initial_state: 10.0 0.0 0.01
