@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 from flux_config import FLUX_LABELS
 
-def plot_flux_space(X, Y,range ,vman_id="ACKr", output_labels=None):
+def plot_flux_space(X, Y,feasible_range ,vman_id="ACKr", output_labels=None):
     """
     Plot exchange fluxes vs vman values.
 

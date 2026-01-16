@@ -56,7 +56,7 @@ def generate_fba_data(model, vman, file_path=None, n_samples=10000):
         feasibility_dict[v] = feasible
         if feasible:
             feasible_points.append(v)
-
+    print("Feasibility sweep completed.")
     if not feasible_points:
         raise RuntimeError(f"No feasible steady states found for {vman}")
         
@@ -68,7 +68,7 @@ def generate_fba_data(model, vman, file_path=None, n_samples=10000):
     # STEP 2
     # now we sample with n_samples within our feasible region
     # this way we keep a consistent training point number across potentially different vman fluxes
-
+    feasible_min = 0.0
     # Create a range of vman values
     vman_values = np.linspace(feasible_min, feasible_max, n_samples)
     feasible_range = (feasible_min, feasible_max)

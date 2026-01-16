@@ -49,7 +49,7 @@ def parse_args():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument(
         "--vman",
-        default="PYK",
+        default="ACKr",
         help="Reaction ID to manipulate (e.g. PFK, PYK)",
     )
     p.add_argument(
