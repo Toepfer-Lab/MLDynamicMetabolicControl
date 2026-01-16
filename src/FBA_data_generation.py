@@ -3,7 +3,7 @@ import os
 
 from flux_config import FLUX_LABELS, FLUX_RXN_IDS
 
-def generate_fba_data(model, vman, file_path=None, n_samples=10000):
+def generate_fba_data(model, vman, file_path=None, n_samples=1000):
     """
     Generate steady-state FBA data for a given control flux (vman).
 
@@ -69,6 +69,7 @@ def generate_fba_data(model, vman, file_path=None, n_samples=10000):
     # now we sample with n_samples within our feasible region
     # this way we keep a consistent training point number across potentially different vman fluxes
     feasible_min = 0.0
+    feasible_max = 10.0
     # Create a range of vman values
     vman_values = np.linspace(feasible_min, feasible_max, n_samples)
     feasible_range = (feasible_min, feasible_max)

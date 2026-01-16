@@ -23,18 +23,31 @@ from runtime_utils import DATA_DIR, ensure_output_dirs  # noqa: E402
 
 def configure_medium(model, condition: str, glucose_ub: Optional[float]):
     """
-    Apply aerobic/anaerobic settings and optionally clamp glucose uptake.
+    Apply aerobic/anaerobic settings, optionally clamp glucose uptake,
+    and relax selected exchange reactions.
     """
     medium = model.medium
+
+    # Anaerobic condition
     if condition == "anaerobic":
         if "EX_o2_e" in medium:
             medium["EX_o2_e"] = 0.0
+
+    # Clamp glucose uptake
     if glucose_ub is not None:
         try:
             rxn = model.reactions.get_by_id("EX_glc__D_e")
             rxn.upper_bound = glucose_ub
         except KeyError:
             print("Warning: EX_glc__D_e not found; glucose bound unchanged.")
+
+    # Relax additional exchange reactions
+    for rxn_id in ("EX_glyc_e", "EX_succ_e"):
+        try:
+            model.reactions.get_by_id(rxn_id).bounds = (0, 1000)
+        except KeyError:
+            print(f"Warning: {rxn_id} not found; bounds unchanged.")
+
     model.medium = medium
     return medium
 

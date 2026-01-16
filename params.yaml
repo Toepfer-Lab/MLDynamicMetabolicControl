@@ -1,7 +1,7 @@
 # params.yaml
 
 data:
-  model_path: model/ECC2comp
+  model_path: model/ECC2comp_configured
   vman: ACKr
   condition: anaerobic
   n_samples: 1001
@@ -14,8 +14,8 @@ training:
 
 optimize:
   t_start: 0.0
-  t_end: 40.0          # <-- change to 24.0 later
-  num_intervals: 10  # <-- change to 40 later
+  t_end: 15.0          # <-- change to 24.0 later
+  num_intervals: 40  # <-- change to 40 later
   n_eval: 1000
   objective: ethanol
   initial_state: 10.0 0.0 0.01
