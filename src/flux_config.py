@@ -8,7 +8,7 @@ FLUX_RXN_IDS = (
     "EX_etoh_e",
     "EX_glc__D_e",
     "EX_co2_e",
-    "BIOMASS_Ec_iML1515_core_75p37M",
+    "EX_Biomass",
 )
 
 # Human-friendly labels aligned with FLUX_RXN_IDS.

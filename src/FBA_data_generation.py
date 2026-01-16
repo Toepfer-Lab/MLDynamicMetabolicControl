@@ -30,6 +30,16 @@ def generate_fba_data(model, vman, file_path=None, n_samples=10000):
     """
     rxn = model.reactions.get_by_id(vman)
 
+    # first we check if all of the rxn_ids are actually avaialable in the model
+    missing = [rid for rid in FLUX_RXN_IDS if rid not in model.reactions]
+    if missing:
+        raise KeyError(
+            "These " + str(len(missing)) + " FLUX_RXN_IDS are not in the model: "
+            + ", ".join(missing)
+            + "\nAvailable exchanges: "
+            + ", ".join([r.id for r in model.exchanges][:20])
+        )
+
     # STEP 1
     # Do a coarse sweep of vman in order to identify feasible regions
     coarse_values = np.linspace(rxn.lower_bound, rxn.upper_bound, 2000)

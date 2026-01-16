@@ -51,8 +51,6 @@ stages:
       --num-intervals ${optimize.num_intervals}
       --n-eval ${optimize.n_eval}
       --objective ${optimize.objective}
-      --bounds-lower ${optimize.bounds_lower}
-      --bounds-upper ${optimize.bounds_upper}
       --initial-state ${optimize.initial_state}
       --output-path results/optimize_vman_${data.vman}_hidden-${training.hidden_dim}_tend-${optimize.t_end}_N-${optimize.num_intervals}.npz
       --logs-path results/optimize_vman_${data.vman}_hidden-${training.hidden_dim}_tend-${optimize.t_end}_N-${optimize.num_intervals}_logs.npz
