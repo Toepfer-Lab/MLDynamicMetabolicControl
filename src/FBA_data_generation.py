@@ -70,10 +70,15 @@ def generate_fba_data(model, vman, file_path=None, n_samples=1000):
     # this way we keep a consistent training point number across potentially different vman fluxes
     feasible_min = 0.0
     feasible_max = 10.0
+
+
+
     # Create a range of vman values
     vman_values = np.linspace(feasible_min, feasible_max, n_samples)
     feasible_range = (feasible_min, feasible_max)
     X, Y = [], []    #save data points in these lists
+
+    #model.summary()
 
     for v in vman_values:
         rxn.bounds = (v, v)

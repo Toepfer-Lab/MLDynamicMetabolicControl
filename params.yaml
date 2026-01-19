@@ -4,7 +4,7 @@ data:
   model_path: model/ECC2comp_configured
   vman: ACKr
   condition: anaerobic
-  n_samples: 1001
+  n_samples: 10000
 
 training:
   hidden_dim: 4

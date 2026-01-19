@@ -36,9 +36,9 @@ def plot_flux_space(X, Y, feasible_range, vman_id="ACKr", output_labels=None):
             )
 
     # Axis labels
-    ax_left.set_xlabel(f"V_{vman_id} value")
-    ax_left.set_ylabel(r"V_ext,i [mmol/g_b/h]")
-    ax_right.set_ylabel(r"V_ext,bio [1/h]")
+    ax_left.set_xlabel(f"$V_{{{vman_id}}}$ value")
+    ax_left.set_ylabel(r"$V_{{ext},i}$ $[mmol/g_b/h]$")
+    ax_right.set_ylabel(r"$V_{{ext},bio}$ $[1/h]$")
 
     ax_left.set_title("Flux Space")
 

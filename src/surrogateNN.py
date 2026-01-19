@@ -32,6 +32,7 @@ class SurrogateNN(nn.Module):
         self.input_dim = input_dim
         self.hidden_dim = hidden_dim
         self.output_dim = output_dim
+        print(f"Initializing SurrogateNN with input_dim={input_dim}, hidden_dim={hidden_dim}, output_dim={output_dim}")
 
         # Define the network as a sequential stack of layers
         self.net = nn.Sequential(

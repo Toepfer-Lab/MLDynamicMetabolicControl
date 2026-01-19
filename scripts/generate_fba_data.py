@@ -27,7 +27,14 @@ def configure_medium(model, condition: str, glucose_ub: Optional[float]):
     and relax selected exchange reactions.
     """
     medium = model.medium
-
+    #INSERT MODEL CONFIGURATION HERE IF NEEDED
+    model.reactions.get_by_id("EX_glyc_e").bounds = (0, 1000)
+    model.reactions.get_by_id("EX_succ_e").bounds = (0,1000)
+    solution = model.optimize()
+    model.summary()
+    
+    print(f"ACKr value: {solution.fluxes['ACKr']}")
+    print(f"glycine uptake: {solution.fluxes['EX_glyc_e']}")
     # Anaerobic condition
     if condition == "anaerobic":
         if "EX_o2_e" in medium:
@@ -49,6 +56,7 @@ def configure_medium(model, condition: str, glucose_ub: Optional[float]):
             print(f"Warning: {rxn_id} not found; bounds unchanged.")
 
     model.medium = medium
+    print(medium)
     return medium
 
 
