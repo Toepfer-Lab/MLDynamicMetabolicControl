@@ -1,13 +1,29 @@
+from exceptiongroup import catch
 import numpy as np
 import matplotlib.pyplot as plt
 
-from flux_config import FLUX_LABELS
+import sys
+
+if 'ipykernel' in sys.modules:
+    # Running in Jupyter Notebook
+    try:
+        from flux_config import FLUX_LABELS
+    except ImportError:
+        from src.flux_config import FLUX_LABELS
+else:
+    # Running as a standard Python script
+    try:
+        from flux_config import FLUX_LABELS
+    except ImportError:
+        from src.flux_config import FLUX_LABELS
+
 
 def plot_flux_space(X, Y, feasible_range, vman_id="ACKr", output_labels=None):
     """
     Plot exchange fluxes vs vman values with a secondary axis for biomass.
     """
     X_vals = np.array(X).flatten()
+    #print(X_vals)
     Y_vals = np.abs(np.array(Y))
 
     n_outputs = Y_vals.shape[1]
@@ -54,3 +70,6 @@ def plot_flux_space(X, Y, feasible_range, vman_id="ACKr", output_labels=None):
     ax_left.grid(True)
     fig.tight_layout()
     plt.show()
+
+    #save the plot to /plots/flux_sweeps/flux_space.png
+    fig.savefig("/home/jkaatz/MA/MLDynamicMetabolicControl/plots/flux_sweeps/flux_space.png")

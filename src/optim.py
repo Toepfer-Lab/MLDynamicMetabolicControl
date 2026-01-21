@@ -49,12 +49,12 @@ def objective_fn(sol, t_span, objective="biomass"):
     weight_k = 6.0
     weight_p = 3.0
 
-    w = time_weights(t, t1, kind=weight_kind, k=weight_k, p=weight_p)
+    #w = time_weights(t, t1, kind=weight_kind, k=weight_k, p=weight_p)
 
     # avoid all-zero weights if something goes weird
-    w_sum = np.sum(w)
-    if w_sum <= 0:
-        return float(obj_vals[-1])  # fallback to final objective value
+    #w_sum = np.sum(w)
+    #if w_sum <= 0:
+    return float(obj_vals[-1])  # fallback to final objective value
 
     return float(np.sum(w * obj_vals) / w_sum)
 
@@ -84,9 +84,9 @@ def optimize_vman(
     verbose=False,
     log_full_every_k=10,
     log_best_full=True,
-    global_maxiter=80,          # DE generations
-    global_popsize=10,          # DE population size multiplier
-    topk_polish=5,              # number of coarse points to be refined into a final result using powell
+    global_maxiter=100,          # DE generations
+    global_popsize=30,          # DE population size multiplier
+    topk_polish=10,              # number of coarse points to be refined into a final result using powell
     polish_maxiter=2000,        # Powell iterations in polish phase
     seed=0,
 ):

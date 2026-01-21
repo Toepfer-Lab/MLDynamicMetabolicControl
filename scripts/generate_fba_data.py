@@ -8,6 +8,8 @@ import sys
 from typing import Optional
 from pathlib import Path
 
+from src.plotting import plot_flux_space
+
 # Ensure local src is importable when running via sbatch
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SRC_DIR = REPO_ROOT / "src"
@@ -26,34 +28,17 @@ def configure_medium(model, condition: str, glucose_ub: Optional[float]):
     Apply aerobic/anaerobic settings, optionally clamp glucose uptake,
     and relax selected exchange reactions.
     """
-    medium = model.medium
-    #INSERT MODEL CONFIGURATION HERE IF NEEDED
     model.reactions.get_by_id("EX_glyc_e").bounds = (0, 1000)
-    model.reactions.get_by_id("EX_succ_e").bounds = (0,1000)
+    model.reactions.get_by_id("EX_succ_e").bounds = (0, 1000)
+    medium = model.medium
+
+
     solution = model.optimize()
     model.summary()
     
     print(f"ACKr value: {solution.fluxes['ACKr']}")
     print(f"glycine uptake: {solution.fluxes['EX_glyc_e']}")
-    # Anaerobic condition
-    if condition == "anaerobic":
-        if "EX_o2_e" in medium:
-            medium["EX_o2_e"] = 0.0
-
-    # Clamp glucose uptake
-    if glucose_ub is not None:
-        try:
-            rxn = model.reactions.get_by_id("EX_glc__D_e")
-            rxn.upper_bound = glucose_ub
-        except KeyError:
-            print("Warning: EX_glc__D_e not found; glucose bound unchanged.")
-
-    # Relax additional exchange reactions
-    for rxn_id in ("EX_glyc_e", "EX_succ_e"):
-        try:
-            model.reactions.get_by_id(rxn_id).bounds = (0, 1000)
-        except KeyError:
-            print(f"Warning: {rxn_id} not found; bounds unchanged.")
+    medium["EX_glc__D_e"] = 10.0  # default glucose uptake
 
     model.medium = medium
     print(medium)
@@ -127,7 +112,7 @@ def main():
 
     print(f"Saved {len(X)} feasible points to {output_path}")
     print(f"Feasible region for {args.vman}: [{feasible_range[0]:.2f}, {feasible_range[1]:.2f}]")
-
+    plot_flux_space(X, Y, feasible_range, vman_id=args.vman)
 
 if __name__ == "__main__":
     main()

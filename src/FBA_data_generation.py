@@ -1,7 +1,19 @@
+import sys
 import numpy as np
 import os
 
-from flux_config import FLUX_LABELS, FLUX_RXN_IDS
+if 'ipykernel' in sys.modules:
+    # Running in Jupyter Notebook
+    try:
+        from flux_config import FLUX_LABELS, FLUX_RXN_IDS
+    except ImportError:
+        from src.flux_config import FLUX_LABELS, FLUX_RXN_IDS
+else:
+    # Running as a standard Python script
+    try:
+        from flux_config import FLUX_LABELS, FLUX_RXN_IDS
+    except ImportError:
+        from src.flux_config import FLUX_LABELS, FLUX_RXN_IDS
 
 def generate_fba_data(model, vman, file_path=None, n_samples=1000):
     """
@@ -42,7 +54,8 @@ def generate_fba_data(model, vman, file_path=None, n_samples=1000):
 
     # STEP 1
     # Do a coarse sweep of vman in order to identify feasible regions
-    coarse_values = np.linspace(rxn.lower_bound, rxn.upper_bound, 2000)
+
+    coarse_values = np.linspace(-100.0, 100.0, 2000)
     print(f"reaction bounds: [{rxn.lower_bound}, {rxn.upper_bound}]")
     feasibility_dict = {}  # Tracks whether each vman value is feasible
     feasible_points = []
@@ -68,8 +81,8 @@ def generate_fba_data(model, vman, file_path=None, n_samples=1000):
     # STEP 2
     # now we sample with n_samples within our feasible region
     # this way we keep a consistent training point number across potentially different vman fluxes
-    feasible_min = 0.0
-    feasible_max = 10.0
+    #feasible_min = 0.0
+    #feasible_max = 10.0
 
 
 

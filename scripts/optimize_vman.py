@@ -127,9 +127,9 @@ def main():
         log_full_every_k=args.log_full_every_k,
         verbose=args.verbose,
         global_maxiter=80,
-        global_popsize=6,
-        topk_polish=3,
-        polish_maxiter=500,
+        global_popsize=10,
+        topk_polish=5,
+        polish_maxiter=1000,
         seed=0,
     )
 

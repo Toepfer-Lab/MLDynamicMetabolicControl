@@ -15,7 +15,7 @@ training:
 optimize:
   t_start: 0.0
   t_end: 15.0          # <-- change to 24.0 later
-  num_intervals: 40  # <-- change to 40 later
+  num_intervals: 3  # <-- change to 40 later
   n_eval: 1000
   objective: ethanol
   initial_state: 10.0 0.0 0.01

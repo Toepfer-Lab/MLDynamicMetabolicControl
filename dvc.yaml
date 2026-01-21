@@ -57,7 +57,7 @@ stages:
     deps:
       - trained_models/${data.vman}_trained_model_input-1_output-4_hidden-${training.hidden_dim}.pt
       - scripts/optimize_vman.py
-      - src/
+      - src/optim.py
     params:
       - optimize
     outs:

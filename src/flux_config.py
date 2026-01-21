@@ -9,10 +9,14 @@ FLUX_RXN_IDS = (
     "EX_glc__D_e",
     "EX_co2_e",
     "EX_Biomass",
+    "EX_ac_e",
+    "PFL",
+    "PDH",
+
 )
 
 # Human-friendly labels aligned with FLUX_RXN_IDS.
-FLUX_LABELS = ("etoh", "glc", "co2", "biomass")
+FLUX_LABELS = ("etoh", "glc", "co2", "biomass", "acetate", "PFL", "PDH")
 FLUX_INDEX = {name: idx for idx, name in enumerate(FLUX_LABELS)}
 
 # Order of state variables in the hybrid ODE system.
