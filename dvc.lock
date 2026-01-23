@@ -2,12 +2,12 @@ schema: '2.0'
 stages:
   generate_data:
     cmd: "python scripts/generate_fba_data.py --model-path model/ECC2comp_configured
-      --vman ACKr --condition anaerobic --n-samples 10000\n"
+      --vman ACKr --condition anaerobic --n-samples 10000 --objective EX_Biomass\n"
     deps:
     - path: scripts/generate_fba_data.py
       hash: md5
-      md5: 0d64f4c92bc7fb10015d3af4bc47ab55
-      size: 3607
+      md5: fe11029f47c2291235a0211feafb9ec4
+      size: 3732
     - path: src/FBA_data_generation.py
       hash: md5
       md5: f7dff716ddafdd34c66fcdafc39f5241
@@ -22,15 +22,15 @@ stages:
         data.n_samples: 10000
         data.vman: ACKr
     outs:
-    - path: data/fba_data_ACKr_anaerobic.npz
+    - path: data/fba_data_ACKr_anaerobic_EX_Biomass.npz
       hash: md5
       md5: d21df5773ff8b4a19425cece9f20a8f3
       size: 419644
   train_surrogate:
     cmd: "python scripts/train_surrogate.py --vman ACKr --condition anaerobic --hidden-dim
-      4 --epochs 501 --patience 50 --lr 0.001 --model-name ACKr_trained_model_input-1_output-4_hidden-4\n"
+      4 --epochs 501 --patience 50 --lr 0.001 --model-name ACKr_EX_Biomass_trained_model_input-1_output-4_hidden-4\n"
     deps:
-    - path: data/fba_data_ACKr_anaerobic.npz
+    - path: data/fba_data_ACKr_anaerobic_EX_Biomass.npz
       hash: md5
       md5: d21df5773ff8b4a19425cece9f20a8f3
       size: 419644
@@ -57,15 +57,16 @@ stages:
         training.lr: 0.001
         training.patience: 50
     outs:
-    - path: trained_models/ACKr_trained_model_input-1_output-4_hidden-4.pt
+    - path: 
+        trained_models/ACKr_EX_Biomass_trained_model_input-1_output-4_hidden-4.pt
       hash: md5
-      md5: c6355767056114a46687e2c99c0fa067
-      size: 4879
+      md5: 626a205ea773160f6f1c5d38e034648e
+      size: 5117
   optimize:
-    cmd: "python scripts/optimize_vman.py --checkpoint trained_models/ACKr_trained_model_input-1_output-4_hidden-4.pt
+    cmd: "python scripts/optimize_vman.py --checkpoint trained_models/ACKr_EX_Biomass_trained_model_input-1_output-4_hidden-4.pt
       --t-start 0.0 --t-end 15.0 --num-intervals 3 --n-eval 1000 --objective ethanol
-      --initial-state 10.0 0.0 0.01 --output-path results/optimize_vman_ACKr_hidden-4_tend-15.0_N-3.npz
-      --logs-path results/optimize_vman_ACKr_hidden-4_tend-15.0_N-3_logs.npz\n"
+      --initial-state 10.0 0.0 0.01 --output-path results/optimize_vman_ACKr_EX_Biomass_hidden-4_tend-15.0_N-3.npz
+      --logs-path results/optimize_vman_ACKr_EX_Biomass_hidden-4_tend-15.0_N-3_logs.npz\n"
     deps:
     - path: scripts/optimize_vman.py
       hash: md5
@@ -75,10 +76,11 @@ stages:
       hash: md5
       md5: 5f536cfbd220c3e561cf9e67ab6d83b8
       size: 7265
-    - path: trained_models/ACKr_trained_model_input-1_output-4_hidden-4.pt
+    - path: 
+        trained_models/ACKr_EX_Biomass_trained_model_input-1_output-4_hidden-4.pt
       hash: md5
-      md5: c6355767056114a46687e2c99c0fa067
-      size: 4879
+      md5: 626a205ea773160f6f1c5d38e034648e
+      size: 5117
     params:
       params.yaml:
         optimize:
@@ -89,33 +91,36 @@ stages:
           objective: ethanol
           initial_state: 10.0 0.0 0.01
     outs:
-    - path: results/optimize_vman_ACKr_hidden-4_tend-15.0_N-3.npz
+    - path: results/optimize_vman_ACKr_EX_Biomass_hidden-4_tend-15.0_N-3.npz
       hash: md5
-      md5: 99eccb1b1149e20d5e51b37b41bfa25a
-      size: 28864
-    - path: results/optimize_vman_ACKr_hidden-4_tend-15.0_N-3_logs.npz
+      md5: 981d6e5eff91a5561937b7e10abd4134
+      size: 28862
+    - path: 
+        results/optimize_vman_ACKr_EX_Biomass_hidden-4_tend-15.0_N-3_logs.npz
       hash: md5
-      md5: eac744bd7c2876ad714c51e80989ec23
-      size: 571586
+      md5: 783e08662447a95b35714bda1093d3dc
+      size: 1223001
   plot:
-    cmd: "python scripts/plot_optimize_vman.py --results results/optimize_vman_ACKr_hidden-4_tend-15.0_N-3.npz
-      --logs results/optimize_vman_ACKr_hidden-4_tend-15.0_N-3_logs.npz --outdir plots/tend-15.0_N-3\n"
+    cmd: "python scripts/plot_optimize_vman.py --results results/optimize_vman_ACKr_EX_Biomass_hidden-4_tend-15.0_N-3.npz
+      --logs results/optimize_vman_ACKr_EX_Biomass_hidden-4_tend-15.0_N-3_logs.npz
+      --outdir plots/EX_Biomass_tend-15.0_N-3\n"
     deps:
-    - path: results/optimize_vman_ACKr_hidden-4_tend-15.0_N-3.npz
+    - path: results/optimize_vman_ACKr_EX_Biomass_hidden-4_tend-15.0_N-3.npz
       hash: md5
-      md5: 99eccb1b1149e20d5e51b37b41bfa25a
-      size: 28864
-    - path: results/optimize_vman_ACKr_hidden-4_tend-15.0_N-3_logs.npz
+      md5: 981d6e5eff91a5561937b7e10abd4134
+      size: 28862
+    - path: 
+        results/optimize_vman_ACKr_EX_Biomass_hidden-4_tend-15.0_N-3_logs.npz
       hash: md5
-      md5: eac744bd7c2876ad714c51e80989ec23
-      size: 571586
+      md5: 783e08662447a95b35714bda1093d3dc
+      size: 1223001
     - path: scripts/plot_optimize_vman.py
       hash: md5
       md5: cddfc0992c775abdf95a413abc2d418e
       size: 8887
     outs:
-    - path: plots/tend-15.0_N-3/
+    - path: plots/EX_Biomass_tend-15.0_N-3/
       hash: md5
-      md5: 5179ad1dc0b2284b40a379cd8cf5f88e.dir
-      size: 391966
+      md5: de145a25d10d7125b4b17841e8f5aecf.dir
+      size: 408060
       nfiles: 2

@@ -23,17 +23,20 @@ import FBA_data_generation  # noqa: E402
 from runtime_utils import DATA_DIR, ensure_output_dirs  # noqa: E402
 
 
-def configure_medium(model, condition: str, glucose_ub: Optional[float]):
+def configure_medium(model, condition: str, objective: str):
     """
     Apply aerobic/anaerobic settings, optionally clamp glucose uptake,
     and relax selected exchange reactions.
     """
     model.reactions.get_by_id("EX_glyc_e").bounds = (0, 1000)
     model.reactions.get_by_id("EX_succ_e").bounds = (0, 1000)
+    model.objective = objective
     medium = model.medium
 
 
     solution = model.optimize()
+
+    print(f"Objective value: {solution.objective_value}")
     model.summary()
     
     print(f"ACKr value: {solution.fluxes['ACKr']}")
@@ -47,9 +50,13 @@ def configure_medium(model, condition: str, glucose_ub: Optional[float]):
 
 def parse_args():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--vman", default="PYK", help="Reaction ID to manipulate (e.g. PFK, PYK)")
+    parser.add_argument("--vman", default="ACKr", help="Reaction ID to manipulate (e.g. PFK, PYK)")
 
-
+    parser.add_argument(
+        "--objective",
+        default="EX_Biomass",
+        help="Objective reaction ID to set (default: COBRA textbook model biomass)"
+    )
     parser.add_argument(
         "--model-id",
         default="textbook",
@@ -64,6 +71,7 @@ def parse_args():
     )
     parser.add_argument(
         "--condition",
+        
         choices=["aerobic", "anaerobic"],
         default="anaerobic",
         help="Media condition to apply",
@@ -89,9 +97,8 @@ def main():
     args = parse_args()
     ensure_output_dirs()
     print(f"model path is: {args.model_path}")
-    output_path = args.output or DATA_DIR / f"fba_data_{args.vman}_{args.condition}.npz"
-    if output_path.exists() and not args.overwrite:
-        raise FileExistsError(f"{output_path} already exists. Use --overwrite to replace it.")
+    output_path = args.output or DATA_DIR / f"fba_data_{args.vman}_{args.condition}_{args.objective}.npz"
+
 
     mp = args.model_path
     mp = None if mp is None else str(mp).strip()
@@ -101,7 +108,7 @@ def main():
     else:
         model = load_model(args.model_id)
 
-    configure_medium(model, args.condition, args.glucose_ub)
+    configure_medium(model, args.condition, args.objective)
 
     X, Y, feasible_range = FBA_data_generation.generate_fba_data(
         model,

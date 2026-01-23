@@ -5,6 +5,7 @@ data:
   vman: ACKr
   condition: anaerobic
   n_samples: 10000
+  objective: EX_Biomass
 
 training:
   hidden_dim: 4

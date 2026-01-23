@@ -8,11 +8,14 @@ if 'ipykernel' in sys.modules:
     # Running in Jupyter Notebook
     try:
         from flux_config import FLUX_LABELS
+        print("1")
     except ImportError:
+        print("2")
         from src.flux_config import FLUX_LABELS
 else:
     # Running as a standard Python script
     try:
+        print("3")
         from flux_config import FLUX_LABELS
     except ImportError:
         from src.flux_config import FLUX_LABELS
