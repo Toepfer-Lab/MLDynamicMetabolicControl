@@ -19,7 +19,9 @@ stages:
     params:
       params.yaml:
         data.condition: anaerobic
+        data.model_path: model/ECC2comp_configured
         data.n_samples: 10000
+        data.objective: EX_Biomass
         data.vman: ACKr
     outs:
     - path: data/fba_data_ACKr_anaerobic_EX_Biomass.npz
@@ -52,6 +54,9 @@ stages:
       size: 6207
     params:
       params.yaml:
+        data.condition: anaerobic
+        data.objective: EX_Biomass
+        data.vman: ACKr
         training.epochs: 501
         training.hidden_dim: 4
         training.lr: 0.001
@@ -60,18 +65,18 @@ stages:
     - path: 
         trained_models/ACKr_EX_Biomass_trained_model_input-1_output-4_hidden-4.pt
       hash: md5
-      md5: 626a205ea773160f6f1c5d38e034648e
+      md5: dc75f84da002706b5c63230efbed9c39
       size: 5117
   optimize:
     cmd: "python scripts/optimize_vman.py --checkpoint trained_models/ACKr_EX_Biomass_trained_model_input-1_output-4_hidden-4.pt
-      --t-start 0.0 --t-end 15.0 --num-intervals 3 --n-eval 1000 --objective ethanol
-      --initial-state 10.0 0.0 0.01 --output-path results/optimize_vman_ACKr_EX_Biomass_hidden-4_tend-15.0_N-3.npz
-      --logs-path results/optimize_vman_ACKr_EX_Biomass_hidden-4_tend-15.0_N-3_logs.npz\n"
+      --t-start 0.0 --t-end 14.0 --num-intervals 10 --n-eval 1000 --objective ethanol
+      --initial-state 10.0 0.0 0.01 --output-path results/optimize_vman_ACKr_EX_Biomass_hidden-4_tend-14.0_N-10.npz
+      --logs-path results/optimize_vman_ACKr_EX_Biomass_hidden-4_tend-14.0_N-10_logs.npz\n"
     deps:
     - path: scripts/optimize_vman.py
       hash: md5
-      md5: 82ed31deb1c0defef37fcffbeb52402a
-      size: 5879
+      md5: 929344e4eb090799a640283cebcad467
+      size: 6044
     - path: src/optim.py
       hash: md5
       md5: 5f536cfbd220c3e561cf9e67ab6d83b8
@@ -79,48 +84,141 @@ stages:
     - path: 
         trained_models/ACKr_EX_Biomass_trained_model_input-1_output-4_hidden-4.pt
       hash: md5
-      md5: 626a205ea773160f6f1c5d38e034648e
+      md5: dc75f84da002706b5c63230efbed9c39
       size: 5117
     params:
       params.yaml:
+        data.objective: EX_Biomass
+        data.vman: ACKr
         optimize:
+          log_full_every_k: 10
           t_start: 0.0
-          t_end: 15.0
-          num_intervals: 3
+          t_end: 14.0
+          num_intervals: 10
           n_eval: 1000
           objective: ethanol
           initial_state: 10.0 0.0 0.01
+        training.hidden_dim: 4
     outs:
-    - path: results/optimize_vman_ACKr_EX_Biomass_hidden-4_tend-15.0_N-3.npz
+    - path: results/optimize_vman_ACKr_EX_Biomass_hidden-4_tend-14.0_N-10.npz
       hash: md5
-      md5: 981d6e5eff91a5561937b7e10abd4134
-      size: 28862
+      md5: abb7b5ecce290f060a29e6641160e5a4
+      size: 29716
     - path: 
-        results/optimize_vman_ACKr_EX_Biomass_hidden-4_tend-15.0_N-3_logs.npz
+        results/optimize_vman_ACKr_EX_Biomass_hidden-4_tend-14.0_N-10_logs.npz
       hash: md5
-      md5: 783e08662447a95b35714bda1093d3dc
-      size: 1223001
+      md5: b93b3b1d3293974d32a42c841866081e
+      size: 2916985
   plot:
-    cmd: "python scripts/plot_optimize_vman.py --results results/optimize_vman_ACKr_EX_Biomass_hidden-4_tend-15.0_N-3.npz
-      --logs results/optimize_vman_ACKr_EX_Biomass_hidden-4_tend-15.0_N-3_logs.npz
-      --outdir plots/EX_Biomass_tend-15.0_N-3\n"
+    cmd: "python scripts/plot_optimize_vman.py --results results/optimize_vman_ACKr_EX_Biomass_hidden-4_tend-14.0_N-10.npz
+      --logs results/optimize_vman_ACKr_EX_Biomass_hidden-4_tend-14.0_N-10_logs.npz
+      --outdir plots/EX_Biomass_tend-14.0_N-10\n"
     deps:
-    - path: results/optimize_vman_ACKr_EX_Biomass_hidden-4_tend-15.0_N-3.npz
+    - path: results/optimize_vman_ACKr_EX_Biomass_hidden-4_tend-14.0_N-10.npz
       hash: md5
-      md5: 981d6e5eff91a5561937b7e10abd4134
-      size: 28862
+      md5: abb7b5ecce290f060a29e6641160e5a4
+      size: 29716
     - path: 
-        results/optimize_vman_ACKr_EX_Biomass_hidden-4_tend-15.0_N-3_logs.npz
+        results/optimize_vman_ACKr_EX_Biomass_hidden-4_tend-14.0_N-10_logs.npz
       hash: md5
-      md5: 783e08662447a95b35714bda1093d3dc
-      size: 1223001
+      md5: b93b3b1d3293974d32a42c841866081e
+      size: 2916985
     - path: scripts/plot_optimize_vman.py
       hash: md5
-      md5: cddfc0992c775abdf95a413abc2d418e
-      size: 8887
+      md5: c5dda712191f88490e1f4ae3cda34cdb
+      size: 9370
     outs:
-    - path: plots/EX_Biomass_tend-15.0_N-3/
+    - path: plots/EX_Biomass_tend-14.0_N-10/
       hash: md5
-      md5: de145a25d10d7125b4b17841e8f5aecf.dir
-      size: 408060
+      md5: 6b387d7b9c427d5f8627fa780fe30ee6.dir
+      size: 465162
+      nfiles: 2
+  optimize_greedy:
+    cmd: "python scripts/greedily_optimize_vman.py --checkpoint trained_models/ACKr_EX_Biomass_trained_model_input-1_output-4_hidden-4.pt
+      --t-start 0.0 --t-end 14.0 --n-eval 1000 --objective ethanol --initial-state
+      10.0 0.0 0.01 --log-full-every-k 10 --split-grid-size 60 --min-dt 0.001 --inner-polish-maxiter
+      80 --final-polish-maxiter 300 --n_cuts 3 --output-path results/greedy_optimize_vman_ACKr_EX_Biomass_hidden-4_tend-14.0.npz
+      --logs-path results/greedy_optimize_vman_ACKr_EX_Biomass_hidden-4_tend-14.0_logs.npz\n"
+    deps:
+    - path: scripts/greedily_optimize_vman.py
+      hash: md5
+      md5: 09cf29b1487e1aa298985747c91ef5be
+      size: 8636
+    - path: src/flux_config.py
+      hash: md5
+      md5: 6fb6eab692419b1613d93413815145a5
+      size: 666
+    - path: src/greedy_optim.py
+      hash: md5
+      md5: 5945a659d748354b75f8d39d0e06e45b
+      size: 16706
+    - path: src/hybrid_model.py
+      hash: md5
+      md5: 3b8efc3f036bd6a854c6f264f4ac73b0
+      size: 2133
+    - path: src/runtime_utils.py
+      hash: md5
+      md5: c11a4338394827484ac56ddd68772802
+      size: 2135
+    - path: src/surrogateNN.py
+      hash: md5
+      md5: e08c12c3a7f8e7a36ca4d31b509e3547
+      size: 6207
+    - path: 
+        trained_models/ACKr_EX_Biomass_trained_model_input-1_output-4_hidden-4.pt
+      hash: md5
+      md5: dc75f84da002706b5c63230efbed9c39
+      size: 5117
+    params:
+      params.yaml:
+        data.objective: EX_Biomass
+        data.vman: ACKr
+        optimize:
+          log_full_every_k: 10
+          t_start: 0.0
+          t_end: 14.0
+          num_intervals: 10
+          n_eval: 1000
+          objective: ethanol
+          initial_state: 10.0 0.0 0.01
+        optimize_greedy:
+          split_grid_size: 60
+          min_dt: 0.001
+          inner_polish_maxiter: 80
+          final_polish_maxiter: 300
+          n_cuts: 3
+        training.hidden_dim: 4
+    outs:
+    - path: results/greedy_optimize_vman_ACKr_EX_Biomass_hidden-4_tend-14.0.npz
+      hash: md5
+      md5: c5087e916f12452bea4a34ee057382ee
+      size: 31433
+    - path: 
+        results/greedy_optimize_vman_ACKr_EX_Biomass_hidden-4_tend-14.0_logs.npz
+      hash: md5
+      md5: a0a9a9023e116ac6b8eb77a9b2d67296
+      size: 162657
+  plot_greedy:
+    cmd: "python scripts/greedy_plot.py --results results/greedy_optimize_vman_ACKr_EX_Biomass_hidden-4_tend-14.0.npz
+      --logs results/greedy_optimize_vman_ACKr_EX_Biomass_hidden-4_tend-14.0_logs.npz
+      --outdir plots/greedy_EX_Biomass_tend-14.0\n"
+    deps:
+    - path: results/greedy_optimize_vman_ACKr_EX_Biomass_hidden-4_tend-14.0.npz
+      hash: md5
+      md5: c5087e916f12452bea4a34ee057382ee
+      size: 31433
+    - path: 
+        results/greedy_optimize_vman_ACKr_EX_Biomass_hidden-4_tend-14.0_logs.npz
+      hash: md5
+      md5: a0a9a9023e116ac6b8eb77a9b2d67296
+      size: 162657
+    - path: scripts/greedy_plot.py
+      hash: md5
+      md5: da769c41e5659339bf6d582168df3f70
+      size: 9484
+    outs:
+    - path: plots/greedy_EX_Biomass_tend-14.0/
+      hash: md5
+      md5: 4f7be12ed79de567981b04173a2e1f6a.dir
+      size: 277416
       nfiles: 2

@@ -113,6 +113,9 @@ def main():
     # Solver output sampling grid; separate from control_times (decision grid).
     t_eval_points = np.linspace(args.t_start, args.t_end, args.n_eval)
 
+    print(f"Initial conditions set to: {args.initial_state}")
+
+
     result, logs = optimize_vman(
         model=model,
         hybrid_ode=hybrid_model.hybrid_ode,
@@ -141,6 +144,8 @@ def main():
     control_times = np.linspace(args.t_start, args.t_end, args.num_intervals + 1)
     vman_t_opt = piecewise_constant_control(control_times, opt_vman_values)
 
+    print(f"Starting conditions for the ivp: {args.initial_state}")
+
     sol_opt = solve_ivp(
         fun=lambda t, z: hybrid_model.hybrid_ode(t, z, vman_t_opt, model, x_scaler, y_scaler),
         t_span=(args.t_start, args.t_end),
@@ -156,6 +161,8 @@ def main():
     objective_curve = sol_opt.y[obj_idx, :] if sol_opt.success else np.array([])
     biomass_curve = sol_opt.y[STATE_INDEX["biomass"], :] if sol_opt.success else np.array([])
     glucose_curve = sol_opt.y[STATE_INDEX["glucose"], :] if sol_opt.success else np.array([])
+
+    print(glucose_curve.shape)
 
     np.savez_compressed(
         output_path,

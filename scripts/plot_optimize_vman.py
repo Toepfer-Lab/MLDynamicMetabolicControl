@@ -122,13 +122,14 @@ def main():
             metadata = {}
     vman_id = metadata.get("vman", "vman")
     objective = "biomass"
+    print(f"objective is defined as {objective}")
     if "objective" in res:
         try:
             objective = str(res["objective"].item())
         except ValueError:
             objective = str(res["objective"])
     objective_label = objective.replace("_", " ").title()
-
+    print(f"objective now is: {objective}")
     # --- Plot 1: Objective evolution during optimization (for entries that have full curves) ---
     # Some logging modes may store only biomass; handle both.
     full_entries = [
@@ -225,6 +226,8 @@ def main():
             t_eval = np.array([])
 
         biomass_curve = np.asarray(res["biomass"], dtype=float) if "biomass" in res else np.array([])
+        biomass_scale = best_final / np.max(biomass_curve, 0)
+        biomass_curve = biomass_curve * biomass_scale if biomass_curve.size else np.array([])
         glucose_curve = np.asarray(res["glucose"], dtype=float) if "glucose" in res else np.array([])
 
         if t_eval.size and biomass_curve.size:
@@ -234,7 +237,7 @@ def main():
                 color="tab:blue",
                 linestyle="--",
                 linewidth=1.5,
-                label="Biomass",
+                label=f"Biomass scaled with factor {biomass_scale:.2f}",
             )
         if t_eval.size and glucose_curve.size:
             ax2.plot(
@@ -251,16 +254,19 @@ def main():
     else:
         ax2.set_ylabel(curve_label)
 
-    # Combined legend (handles from both axes)
+    # Combined legend (handles from both axes), placed outside plot
     h1, l1 = ax1.get_legend_handles_labels()
     h2, l2 = ax2.get_legend_handles_labels()
-    ax1.legend(h1 + h2, l1 + l2, loc="best")
+    handles = h1 + h2
+    labels = l1 + l2
+    fig.legend(handles, labels, loc="center left", bbox_to_anchor=(1.02, 0.5))
 
     plt.title(f"Optimized Control + {curve_label}\n({results_path.stem})")
-    plt.tight_layout()
+    # Leave room on the right for the external legend
+    #plt.tight_layout(rect=[0, 0, 0.82, 1])
 
     combo_plot_path = outdir / f"{results_path.stem}_control_plus_{curve_label.lower()}.png"
-    plt.savefig(combo_plot_path, dpi=200)
+    plt.savefig(combo_plot_path, dpi=200, bbox_inches="tight")
 
     print(f"Saved {curve_label.lower()} trajectories plot to {biomass_plot_path}")
     print(f"Saved control+{curve_label.lower()} plot to {combo_plot_path}")

@@ -14,9 +14,17 @@ training:
   lr: 0.001
 
 optimize:
+  log_full_every_k: 10 
   t_start: 0.0
-  t_end: 15.0          # <-- change to 24.0 later
-  num_intervals: 3  # <-- change to 40 later
+  t_end: 18.0          # <-- change to 24.0 later
+  num_intervals: 8  # <-- change to 40 later
   n_eval: 1000
   objective: ethanol
   initial_state: 10.0 0.0 0.01
+
+optimize_greedy:
+  split_grid_size: 60
+  min_dt: 0.001
+  inner_polish_maxiter: 80
+  final_polish_maxiter: 300
+  n_cuts: 8
