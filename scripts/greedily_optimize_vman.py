@@ -61,9 +61,17 @@ def parse_args():
 
     # greedy knobs (multi-cut)
     parser.add_argument("--n_cuts", type=int, default=3, help="Number of greedy cuts to insert")
-    parser.add_argument("--split-grid-size", dest="split_grid_size", type=int, default=60,
+    parser.add_argument("--split-grid-size", dest="split_grid_size", type=int, default=15,
                         help="Candidate split times to test (per interval)")
     parser.add_argument("--min-dt", type=float, default=1e-3, help="Exclude splits within min_dt of interval ends")
+    parser.add_argument(
+        "--search-bounds",
+        type=float,
+        nargs=2,
+        metavar=("t_min", "t_max"),
+        default=(10, 14),
+        help="Optional (t_min, t_max) to narrow search window for cuts (e.g., --search-bounds 10 14)",
+    )
     parser.add_argument("--inner-polish-maxiter", type=int, default=80, help="Local maxiter per candidate split")
     parser.add_argument("--final-polish-maxiter", type=int, default=300, help="Final polish maxiter at end")
 
@@ -104,10 +112,15 @@ def project_piecewise_to_uniform_grid(t0, t1, N, boundaries, values):
 
 
 def main():
+    print("[DEBUG] Starting main()")
     args = parse_args()
+    print(f"[DEBUG] Arguments parsed: checkpoint={args.checkpoint}")
     ensure_output_dirs()
+    print("[DEBUG] Output directories ensured")
 
+    print(f"[DEBUG] Loading surrogate model from checkpoint: {args.checkpoint}")
     model, x_scaler, y_scaler, metadata = load_surrogate_checkpoint(args.checkpoint, SurrogateNN)
+    print("[DEBUG] Surrogate model loaded successfully")
     feasible_range = metadata.get("feasible_range")
     lower, upper = feasible_range[0], feasible_range[1]
     if lower is None or upper is None:
@@ -118,8 +131,12 @@ def main():
 
     print(f"Initial conditions set to: {args.initial_state}")
     print(f"vman bounds: [{lower}, {upper}]")
+    if args.search_bounds is not None:
+        print(f"Search window narrowed to: {args.search_bounds}")
 
     # ---- run greedy multi-cut optimizer ----
+    print(f"[DEBUG] Starting greedy optimizer with n_cuts={args.n_cuts}, split_grid_size={args.split_grid_size}")
+    print("[DEBUG] This may take a while...")
     greedy_res, logs = optimize_vman_greedy_k_cuts(
         model=model,
         hybrid_ode=hybrid_model.hybrid_ode,
@@ -133,31 +150,38 @@ def main():
         n_cuts=args.n_cuts,
         split_grid_size=args.split_grid_size,
         min_dt=args.min_dt,
+        global_search_bounds=tuple(args.search_bounds) if args.search_bounds else None,
         inner_polish_maxiter=args.inner_polish_maxiter,
         final_polish_maxiter=args.final_polish_maxiter,
         seed=0,
         verbose=args.verbose,
         log_full_every_k=args.log_full_every_k,
     )
+    print("[DEBUG] Greedy optimizer completed")
 
     boundaries_true = np.asarray(greedy_res["boundaries"], dtype=float)
     values_true = np.asarray(greedy_res["vman_values"], dtype=float)
+    print("[DEBUG] Extracted boundaries and values from greedy result")
 
     print(f"Greedy result: cuts_used={greedy_res.get('n_cuts_used')}  intervals={values_true.size}")
     print(f"Boundaries (true): {boundaries_true}")
     print(f"Values (true): {values_true}")
 
     # ---- project onto uniform grid for existing plot script ----
+    print(f"[DEBUG] Projecting control onto uniform grid with {args.num_intervals} intervals")
     control_times, opt_vman_values = project_piecewise_to_uniform_grid(
         args.t_start, args.t_end, args.num_intervals, boundaries_true, values_true
     )
+    print("[DEBUG] Projection completed")
 
     # Simulate using the *uniform-grid* control (matches what plot_optimize_vman.py will show)
+    print("[DEBUG] Defining vman control function")
     def vman_t_uniform(t):
         idx = np.searchsorted(control_times, t, side="right") - 1
         idx = int(np.clip(idx, 0, args.num_intervals - 1))
         return float(opt_vman_values[idx])
 
+    print("[DEBUG] Starting ODE simulation with solve_ivp (RK45)...")
     sol_opt = solve_ivp(
         fun=lambda t, z: hybrid_model.hybrid_ode(t, z, vman_t_uniform, model, x_scaler, y_scaler),
         t_span=(args.t_start, args.t_end),
@@ -165,15 +189,20 @@ def main():
         t_eval=t_eval_points,
         method="RK45",
     )
+    print(f"[DEBUG] ODE simulation finished. Success: {sol_opt.success}")
 
     output_path = args.output_path or (RESULTS_DIR / f"optimize_vman_{args.checkpoint.stem}.npz")
     output_path.parent.mkdir(parents=True, exist_ok=True)
+    print(f"[DEBUG] Output directory created: {output_path.parent}")
 
+    print("[DEBUG] Extracting simulation results...")
     obj_idx = STATE_INDEX[args.objective]
     objective_curve = sol_opt.y[obj_idx, :] if sol_opt.success else np.array([])
     biomass_curve = sol_opt.y[STATE_INDEX["biomass"], :] if sol_opt.success else np.array([])
     glucose_curve = sol_opt.y[STATE_INDEX["glucose"], :] if sol_opt.success else np.array([])
+    print("[DEBUG] Results extracted")
 
+    print(f"[DEBUG] Saving main results to {output_path}...")
     np.savez_compressed(
         output_path,
         # --- keys required by existing plot script ---
@@ -202,14 +231,18 @@ def main():
             final_polish_maxiter=args.final_polish_maxiter,
         ),
     )
+    print("[DEBUG] Main results saved successfully")
 
     logs_path = args.logs_path or (RESULTS_DIR / f"optimize_vman_{args.checkpoint.stem}_logs.npz")
     logs_path.parent.mkdir(parents=True, exist_ok=True)
+    print(f"[DEBUG] Saving logs to {logs_path}...")
     np.savez_compressed(logs_path, logs=np.array(logs, dtype=object))
+    print("[DEBUG] Logs saved successfully")
 
     print(f"Stored trajectory logs to {logs_path}")
     print(f"Results saved to {output_path}")
     print(f"Solver success: {sol_opt.success}")
+    print("[DEBUG] main() completed successfully")
 
 
 if __name__ == "__main__":

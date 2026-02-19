@@ -23,8 +23,9 @@ optimize:
   initial_state: 10.0 0.0 0.01
 
 optimize_greedy:
-  split_grid_size: 60
+  split_grid_size: 15
   min_dt: 0.001
+  search_bounds: 10.0 14.0
   inner_polish_maxiter: 80
-  final_polish_maxiter: 300
+  final_polish_maxiter: 100
   n_cuts: 8

@@ -309,8 +309,9 @@ def optimize_vman_greedy_k_cuts(
     y_scaler,
     objective="biomass",
     n_cuts=5,                    # number of cuts to insert (final intervals = n_cuts+1)
-    split_grid_size=30,          # candidates per interval
+    split_grid_size=15,          # candidates per interval (reduced for efficiency)
     min_dt=1e-3,
+    global_search_bounds=None,   # optional (t_min, t_max) to narrow search window globally
     inner_polish_maxiter=80,
     polish_each_iter=False,      # if True, polish all values after each cut
     final_polish_maxiter=300,    # polish all values at end
@@ -393,6 +394,9 @@ def optimize_vman_greedy_k_cuts(
 
     # Main loop: insert cuts
     for k in range(n_cuts):
+        print(f"[DEBUG] Starting iteration {k+1}/{n_cuts} of greedy cut insertion")
+        if global_search_bounds is not None:
+            print(f"[DEBUG] Search restricted to bounds: {global_search_bounds}")
         best_candidate = None  # (score, j, tau, b_new, v_new)
 
         # sweep each existing interval
@@ -400,6 +404,15 @@ def optimize_vman_greedy_k_cuts(
             a, b = float(boundaries[j]), float(boundaries[j + 1])
             if (b - a) <= 2 * min_dt:
                 continue
+
+            # Apply global search bounds if provided
+            if global_search_bounds is not None:
+                search_min, search_max = global_search_bounds
+                a_constrained = max(float(a), float(search_min))
+                b_constrained = min(float(b), float(search_max))
+                if (b_constrained - a_constrained) <= 2 * min_dt:
+                    continue
+                a, b = a_constrained, b_constrained
 
             taus = np.linspace(a + min_dt, b - min_dt, split_grid_size)
 

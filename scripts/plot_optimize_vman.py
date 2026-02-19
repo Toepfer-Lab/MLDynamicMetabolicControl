@@ -159,8 +159,8 @@ def main():
             plt.plot(t, b, alpha=0.35)
 
     plt.xlabel("Time [h]")
-    plt.ylabel(curve_label)
-    plt.title(f"{curve_label} evolution during optimization\n({results_path.stem})")
+    plt.ylabel(fr"{curve_label} concentration [$gDW/L$]")
+    plt.title(f"{curve_label} evolution during optimization")
     plt.grid(True)
     biomass_plot_path = outdir / f"{results_path.stem}_{curve_label.lower()}_trajectories.png"
     plt.tight_layout()
@@ -193,9 +193,9 @@ def main():
     fig, ax1 = plt.subplots(figsize=(9, 4.5))
 
     # Left axis: control (step)
-    ax1.step(control_times, opt_vman_plot, where="post", linewidth=2, label=f"Optimized vman ({vman_id})")
+    ax1.step(control_times, opt_vman_plot, where="post", linewidth=2, label=fr"Optimized $V_{{{vman_id}}}$")
     ax1.set_xlabel("Time [h]")
-    ax1.set_ylabel("vman (flux)")
+    ax1.set_ylabel(fr"$V_{{{vman_id}}}$ control $[mmol/gDW/h]$")
     ax1.set_xlim(control_times[0], control_times[-1])
     ax1.grid(True)
 
@@ -250,7 +250,7 @@ def main():
             )
 
     if objective != "biomass" and (("biomass" in res) or ("glucose" in res)):
-        ax2.set_ylabel("Concentration / objective")
+        ax2.set_ylabel(fr"$Z_{{ext}}$")
     else:
         ax2.set_ylabel(curve_label)
 
