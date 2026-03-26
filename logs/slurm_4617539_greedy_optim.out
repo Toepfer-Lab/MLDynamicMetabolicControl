@@ -1,0 +1,52 @@
+[Thu Mar 26 10:16:19 CET 2026] Starting dvc repro plot_greedy
+Working directory: /home/jkaatz/MA/MLDynamicMetabolicControl
+Python: /home/jkaatz/MA/MLDynamicMetabolicControl/.venv/bin/python
+Params:
+# params.yaml
+
+data:
+  model_path: model/ECC2comp_configured
+  vman: ACKr
+  condition: anaerobic
+  n_samples: 10000
+  objective: EX_Biomass
+
+training:
+  hidden_dim: 4
+  epochs: 501
+  patience: 50
+  lr: 0.001
+
+optimize:
+  log_full_every_k: 10 
+  t_start: 0.0
+  t_end: 18.0          # <-- change to 24.0 later
+  num_intervals: 8  # <-- change to 40 later
+  n_eval: 1000
+  objective: ethanol
+  initial_state: 10.0 0.0 0.01
+
+optimize_greedy:
+  mode: k_cuts   # "single_cut_to_zero" or "k_cuts"
+  # single_cut_to_zero params
+  v_right: 0.0               # ACKr value in production phase (fixed at 0)
+  v_left: 7.66               # warm-start hint for growth-phase ACKr (known growth-optimal value)
+  v_left_bounds: 0.0 10.0    # ACKr search range for growth phase
+  joint_polish: 1        # jointly optimise (tau, v_left) in final polish
+  n_iterations: 5            # zoom-in iterations (each halves search window)
+  # k_cuts params
+  n_cuts: 30
+  # temporal window [t_lo, t_hi] restricting where cuts are placed (hours, both modes)
+  tau_bounds: 10.0 14.0
+  # shared
+  split_grid_size: 40
+  min_dt: 0.001
+  inner_polish_maxiter: 80
+  final_polish_maxiter: 300
+/home/jkaatz/MA/MLDynamicMetabolicControl/.venv/lib64/python3.9/site-packages/networkx/utils/backends.py:135: RuntimeWarning: networkx backend defined more than once: nx-loopback
+  backends.update(_get_backends("networkx.backends"))
+Stage 'generate_data' didn't change, skipping
+Stage 'train_surrogate' didn't change, skipping
+Running stage 'optimize_greedy':
+> python scripts/greedily_optimize_vman.py --checkpoint trained_models/ACKr_EX_Biomass_trained_model_input-1_output-4_hidden-4.pt --t-start 0.0 --t-end 18.0 --n-eval 1000 --objective ethanol --initial-state 10.0 0.0 0.01 --log-full-every-k 10 --mode k_cuts --v-right 0.0 --v-left 7.66 --v-left-bounds 0.0 10.0 --tau-bounds 10.0 14.0 --n-iterations 5 --joint-polish 1 --split-grid-size 40 --min-dt 0.001 --inner-polish-maxiter 80 --final-polish-maxiter 300 --n_cuts 30 --output-path results/greedy/greedy_optimize_vman_ACKr_EX_Biomass_hidden-4_tend-18.0.npz --logs-path results/greedy/greedy_optimize_vman_ACKr_EX_Biomass_hidden-4_tend-18.0_logs.npz
+[2026-03-26T13:02:58.678] error: *** JOB 4617539 ON ramses12143 CANCELLED AT 2026-03-26T13:02:58 DUE to SIGNAL Terminated ***

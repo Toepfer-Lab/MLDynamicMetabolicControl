@@ -6,12 +6,12 @@ stages:
     deps:
     - path: scripts/generate_fba_data.py
       hash: md5
-      md5: fe11029f47c2291235a0211feafb9ec4
-      size: 3732
+      md5: d5c9e0b4313ee33eb2ad54c7666de399
+      size: 3848
     - path: src/FBA_data_generation.py
       hash: md5
-      md5: f7dff716ddafdd34c66fcdafc39f5241
-      size: 5735
+      md5: 9f3c03f905a34c78a3741cf76ee775ca
+      size: 5733
     - path: src/flux_config.py
       hash: md5
       md5: 6fb6eab692419b1613d93413815145a5
@@ -26,16 +26,16 @@ stages:
     outs:
     - path: data/fba_data_ACKr_anaerobic_EX_Biomass.npz
       hash: md5
-      md5: d21df5773ff8b4a19425cece9f20a8f3
-      size: 419644
+      md5: 8d25cc9e3294907d9cdcad85835e81da
+      size: 396754
   train_surrogate:
     cmd: "python scripts/train_surrogate.py --vman ACKr --condition anaerobic --hidden-dim
       4 --epochs 501 --patience 50 --lr 0.001 --model-name ACKr_EX_Biomass_trained_model_input-1_output-4_hidden-4\n"
     deps:
     - path: data/fba_data_ACKr_anaerobic_EX_Biomass.npz
       hash: md5
-      md5: d21df5773ff8b4a19425cece9f20a8f3
-      size: 419644
+      md5: 8d25cc9e3294907d9cdcad85835e81da
+      size: 396754
     - path: scripts/train_surrogate.py
       hash: md5
       md5: 49b762e45d1d41fa991d77845d383efb
@@ -65,7 +65,7 @@ stages:
     - path: 
         trained_models/ACKr_EX_Biomass_trained_model_input-1_output-4_hidden-4.pt
       hash: md5
-      md5: dc75f84da002706b5c63230efbed9c39
+      md5: 92de4a80c6537c32eba8b6ef182605e4
       size: 5117
   optimize:
     cmd: "python scripts/optimize_vman.py --checkpoint trained_models/ACKr_EX_Biomass_trained_model_input-1_output-4_hidden-4.pt
@@ -136,22 +136,24 @@ stages:
   optimize_greedy:
     cmd: "python scripts/greedily_optimize_vman.py --checkpoint trained_models/ACKr_EX_Biomass_trained_model_input-1_output-4_hidden-4.pt
       --t-start 0.0 --t-end 18.0 --n-eval 1000 --objective ethanol --initial-state
-      10.0 0.0 0.01 --log-full-every-k 10 --split-grid-size 15 --min-dt 0.001 --inner-polish-maxiter
-      80 --final-polish-maxiter 100 --n_cuts 8 --output-path results/greedy_optimize_vman_ACKr_EX_Biomass_hidden-4_tend-18.0.npz
-      --logs-path results/greedy_optimize_vman_ACKr_EX_Biomass_hidden-4_tend-18.0_logs.npz\n"
+      10.0 0.0 0.01 --log-full-every-k 10 --mode k_cuts --v-right 0.0 --v-left 7.66
+      --v-left-bounds 0.0 10.0 --tau-bounds 10.0 14.0 --n-iterations 5 --joint-polish
+      1 --split-grid-size 10 --min-dt 0.001 --inner-polish-maxiter 80 --final-polish-maxiter
+      300 --n_cuts 3 --output-path results/greedy/greedy_optimize_vman_ACKr_EX_Biomass_hidden-4_tend-18.0.npz
+      --logs-path results/greedy/greedy_optimize_vman_ACKr_EX_Biomass_hidden-4_tend-18.0_logs.npz\n"
     deps:
     - path: scripts/greedily_optimize_vman.py
       hash: md5
-      md5: d593a82b5176c62a667c7155e3be98fe
-      size: 10419
+      md5: ae2a93819851cb809f1c506eae59cec1
+      size: 13770
     - path: src/flux_config.py
       hash: md5
       md5: 6fb6eab692419b1613d93413815145a5
       size: 666
     - path: src/greedy_optim.py
       hash: md5
-      md5: f336ef714dab2b64c7a38dcc8f4c1b92
-      size: 17476
+      md5: f9002d8d82da528f37439d183fee5d3d
+      size: 25677
     - path: src/hybrid_model.py
       hash: md5
       md5: 3b8efc3f036bd6a854c6f264f4ac73b0
@@ -167,7 +169,7 @@ stages:
     - path: 
         trained_models/ACKr_EX_Biomass_trained_model_input-1_output-4_hidden-4.pt
       hash: md5
-      md5: dc75f84da002706b5c63230efbed9c39
+      md5: 92de4a80c6537c32eba8b6ef182605e4
       size: 5117
     params:
       params.yaml:
@@ -182,44 +184,41 @@ stages:
           objective: ethanol
           initial_state: 10.0 0.0 0.01
         optimize_greedy:
-          split_grid_size: 15
+          mode: k_cuts
+          v_right: 0.0
+          v_left: 7.66
+          v_left_bounds: 0.0 10.0
+          joint_polish: 1
+          n_iterations: 5
+          n_cuts: 3
+          tau_bounds: 10.0 14.0
+          split_grid_size: 10
           min_dt: 0.001
-          search_bounds: 10.0 14.0
           inner_polish_maxiter: 80
-          final_polish_maxiter: 100
-          n_cuts: 8
+          final_polish_maxiter: 300
         training.hidden_dim: 4
     outs:
-    - path: results/greedy_optimize_vman_ACKr_EX_Biomass_hidden-4_tend-18.0.npz
+    - path: results/greedy/
       hash: md5
-      md5: 0efba44f5c35fb340fbb1e3e72107ade
-      size: 29178
-    - path: 
-        results/greedy_optimize_vman_ACKr_EX_Biomass_hidden-4_tend-18.0_logs.npz
-      hash: md5
-      md5: 63002e8b987d557863429e2a1f070663
-      size: 203347
+      md5: 7c1cdd7567d99cd2a087be515f6114d8.dir
+      size: 5018372
+      nfiles: 4
   plot_greedy:
-    cmd: "python scripts/greedy_plot.py --results results/greedy_optimize_vman_ACKr_EX_Biomass_hidden-4_tend-18.0.npz
-      --logs results/greedy_optimize_vman_ACKr_EX_Biomass_hidden-4_tend-18.0_logs.npz
+    cmd: "python scripts/greedy_plot.py --latest results/greedy/greedy_optimize_vman_ACKr_EX_Biomass_hidden-4_tend-18.0
       --outdir plots/greedy_EX_Biomass_tend-18.0\n"
     deps:
-    - path: results/greedy_optimize_vman_ACKr_EX_Biomass_hidden-4_tend-18.0.npz
+    - path: results/greedy/
       hash: md5
-      md5: 0efba44f5c35fb340fbb1e3e72107ade
-      size: 29178
-    - path: 
-        results/greedy_optimize_vman_ACKr_EX_Biomass_hidden-4_tend-18.0_logs.npz
-      hash: md5
-      md5: 63002e8b987d557863429e2a1f070663
-      size: 203347
+      md5: 7c1cdd7567d99cd2a087be515f6114d8.dir
+      size: 5018372
+      nfiles: 4
     - path: scripts/greedy_plot.py
       hash: md5
-      md5: da769c41e5659339bf6d582168df3f70
-      size: 9484
+      md5: dde8ce332f20f7abf42d78a22ca6135b
+      size: 11031
     outs:
     - path: plots/greedy_EX_Biomass_tend-18.0/
       hash: md5
-      md5: a65a8a98d728a3ce8a0ff01ec46bd962.dir
-      size: 287700
+      md5: ed99e9ef4cf58c6c5d03166a7911004f.dir
+      size: 293595
       nfiles: 2

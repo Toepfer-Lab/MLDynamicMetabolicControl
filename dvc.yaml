@@ -101,13 +101,20 @@ stages:
       --objective ${optimize.objective}
       --initial-state ${optimize.initial_state}
       --log-full-every-k ${optimize.log_full_every_k}
+      --mode ${optimize_greedy.mode}
+      --v-right ${optimize_greedy.v_right}
+      --v-left ${optimize_greedy.v_left}
+      --v-left-bounds ${optimize_greedy.v_left_bounds}
+      --tau-bounds ${optimize_greedy.tau_bounds}
+      --n-iterations ${optimize_greedy.n_iterations}
+      --joint-polish ${optimize_greedy.joint_polish}
       --split-grid-size ${optimize_greedy.split_grid_size}
       --min-dt ${optimize_greedy.min_dt}
       --inner-polish-maxiter ${optimize_greedy.inner_polish_maxiter}
       --final-polish-maxiter ${optimize_greedy.final_polish_maxiter}
       --n_cuts ${optimize_greedy.n_cuts}
-      --output-path results/greedy_optimize_vman_${data.vman}_${data.objective}_hidden-${training.hidden_dim}_tend-${optimize.t_end}.npz
-      --logs-path results/greedy_optimize_vman_${data.vman}_${data.objective}_hidden-${training.hidden_dim}_tend-${optimize.t_end}_logs.npz
+      --output-path results/greedy/greedy_optimize_vman_${data.vman}_${data.objective}_hidden-${training.hidden_dim}_tend-${optimize.t_end}.npz
+      --logs-path results/greedy/greedy_optimize_vman_${data.vman}_${data.objective}_hidden-${training.hidden_dim}_tend-${optimize.t_end}_logs.npz
     deps:
       - trained_models/${data.vman}_${data.objective}_trained_model_input-1_output-4_hidden-${training.hidden_dim}.pt
       - scripts/greedily_optimize_vman.py
@@ -123,18 +130,17 @@ stages:
       - data.objective
       - training.hidden_dim
     outs:
-      - results/greedy_optimize_vman_${data.vman}_${data.objective}_hidden-${training.hidden_dim}_tend-${optimize.t_end}.npz
-      - results/greedy_optimize_vman_${data.vman}_${data.objective}_hidden-${training.hidden_dim}_tend-${optimize.t_end}_logs.npz
+      - results/greedy/:
+          cache: false
+          persist: true
 
   plot_greedy:
     cmd: >
       python scripts/greedy_plot.py
-      --results results/greedy_optimize_vman_${data.vman}_${data.objective}_hidden-${training.hidden_dim}_tend-${optimize.t_end}.npz
-      --logs results/greedy_optimize_vman_${data.vman}_${data.objective}_hidden-${training.hidden_dim}_tend-${optimize.t_end}_logs.npz
+      --latest results/greedy/greedy_optimize_vman_${data.vman}_${data.objective}_hidden-${training.hidden_dim}_tend-${optimize.t_end}
       --outdir plots/greedy_${data.objective}_tend-${optimize.t_end}
     deps:
-      - results/greedy_optimize_vman_${data.vman}_${data.objective}_hidden-${training.hidden_dim}_tend-${optimize.t_end}.npz
-      - results/greedy_optimize_vman_${data.vman}_${data.objective}_hidden-${training.hidden_dim}_tend-${optimize.t_end}_logs.npz
+      - results/greedy/
       - scripts/greedy_plot.py
     outs:
       - plots/greedy_${data.objective}_tend-${optimize.t_end}/

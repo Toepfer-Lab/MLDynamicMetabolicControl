@@ -1,0 +1,8 @@
+/var/spool/slurmd/job4452895/slurm_script: line 18: .venv/bin/activate: No such file or directory
+[Mon Mar 16 09:14:40 CET 2026] Starting dvc repro plot_greedy
+Working directory: /var/spool/slurmd
+Python: /home/jkaatz/MA/MLDynamicMetabolicControl/.venv/bin/python
+Params:
+cat: params.yaml: No such file or directory
+ERROR: you are not inside of a DVC repository (checked up to mount point '/')
+[Mon Mar 16 09:14:41 CET 2026] Job finished (exit code 0)

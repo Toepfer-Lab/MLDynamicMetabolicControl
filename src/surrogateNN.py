@@ -27,7 +27,7 @@ class SurrogateNN(nn.Module):
         Number of output fluxes predicted (e.g., ethanol, CO₂, biomass).
     """
 
-    def __init__(self, input_dim=1, hidden_dim=5, output_dim=3):
+    def __init__(self, input_dim=1, hidden_dim=10, output_dim=3):
         super().__init__()
         self.input_dim = input_dim
         self.hidden_dim = hidden_dim

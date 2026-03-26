@@ -1,3 +1,7 @@
+[Mon Mar 16 11:23:15 CET 2026] Starting dvc repro plot_greedy
+Working directory: /home/jkaatz/MA/MLDynamicMetabolicControl
+Python: /home/jkaatz/MA/MLDynamicMetabolicControl/.venv/bin/python
+Params:
 # params.yaml
 
 data:
@@ -26,16 +30,22 @@ optimize_greedy:
   mode: k_cuts   # "single_cut_to_zero" or "k_cuts"
   # single_cut_to_zero params
   v_right: 0.0               # ACKr value in production phase (fixed at 0)
-  v_left: 7.66               # warm-start hint for growth-phase ACKr (known growth-optimal value)
-  v_left_bounds: 0.0 10.0    # ACKr search range for growth phase
+  v_left_bounds: 5.0 14.0    # ACKr search range for growth phase (set to known growth-optimal region)
   joint_polish: 1        # jointly optimise (tau, v_left) in final polish
   n_iterations: 5            # zoom-in iterations (each halves search window)
   # k_cuts params
-  n_cuts: 3
-  # temporal window [t_lo, t_hi] restricting where cuts are placed (hours, both modes)
-  tau_bounds: 10.0 14.0
+  n_cuts: 30
+  # single_cut_to_zero: temporal window [t_lo, t_hi] for tau sweep
+  # k_cuts: ACKr value bounds for the greedy search
+  search_bounds: 10.0 14.0
   # shared
-  split_grid_size: 10
+  split_grid_size: 40
   min_dt: 0.001
   inner_polish_maxiter: 80
   final_polish_maxiter: 300
+ERROR: The output paths:
+'results'('optimize_greedy')
+'results/optimize_vman_ACKr_EX_Biomass_hidden-4_tend-18.0_N-8.npz'('optimize')
+overlap and are thus in the same tracked directory.
+To keep reproducibility, outputs should be in separate tracked directories or tracked individually.
+[Mon Mar 16 11:23:17 CET 2026] Job finished (exit code 0)

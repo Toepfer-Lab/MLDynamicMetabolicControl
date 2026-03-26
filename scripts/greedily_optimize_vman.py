@@ -13,6 +13,7 @@ plot script works unchanged.
 
 import argparse
 import sys
+from datetime import datetime
 from pathlib import Path
 
 import numpy as np
@@ -30,6 +31,7 @@ from surrogateNN import SurrogateNN  # noqa: E402
 
 from greedy_optim import (  # noqa: E402
     optimize_vman_greedy_k_cuts,
+    optimize_vman_single_cut_to_zero,
     make_piecewise_constant_control,
 )
 
@@ -65,15 +67,35 @@ def parse_args():
                         help="Candidate split times to test (per interval)")
     parser.add_argument("--min-dt", type=float, default=1e-3, help="Exclude splits within min_dt of interval ends")
     parser.add_argument(
-        "--search-bounds",
+        "--tau-bounds",
         type=float,
         nargs=2,
-        metavar=("t_min", "t_max"),
-        default=(10, 14),
-        help="Optional (t_min, t_max) to narrow search window for cuts (e.g., --search-bounds 10 14)",
+        metavar=("t_lo", "t_hi"),
+        default=None,
+        help="Temporal window [t_lo, t_hi] restricting where cuts/tau can be placed (hours)",
     )
     parser.add_argument("--inner-polish-maxiter", type=int, default=80, help="Local maxiter per candidate split")
     parser.add_argument("--final-polish-maxiter", type=int, default=300, help="Final polish maxiter at end")
+
+    # mode selection
+    parser.add_argument(
+        "--mode",
+        type=str,
+        default="single_cut_to_zero",
+        choices=["k_cuts", "single_cut_to_zero"],
+        help="Optimizer mode: 'single_cut_to_zero' finds one switch tau with v_right=0; 'k_cuts' inserts multiple cuts greedily",
+    )
+    # single_cut_to_zero knobs
+    parser.add_argument("--v-right", type=float, default=0.0,
+                        help="Fixed control value after the switch (production phase)")
+    parser.add_argument("--v-left", type=float, default=None,
+                        help="Warm-start hint for growth-phase ACKr; optimizer starts near this value (default: midpoint of v-left-bounds)")
+    parser.add_argument("--joint-polish", type=int, default=1,
+                        help="1 (default) to jointly optimise (tau, v_left) in final polish; 0 to fix tau")
+    parser.add_argument("--n-iterations", type=int, default=1,
+                        help="Zoom-in iterations for single_cut_to_zero (each halves the search window around best tau)")
+    parser.add_argument("--v-left-bounds", type=float, nargs=2, default=None, metavar=("LO", "HI"),
+                        help="ACKr search bounds for the growth phase (v_left); defaults to full feasible range")
 
     parser.add_argument("--output-path", type=Path, default=None, help="Where to save main results .npz")
     parser.add_argument("--logs-path", type=Path, default=None, help="Where to save logs .npz")
@@ -114,6 +136,7 @@ def project_piecewise_to_uniform_grid(t0, t1, N, boundaries, values):
 def main():
     print("[DEBUG] Starting main()")
     args = parse_args()
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     print(f"[DEBUG] Arguments parsed: checkpoint={args.checkpoint}")
     ensure_output_dirs()
     print("[DEBUG] Output directories ensured")
@@ -131,33 +154,64 @@ def main():
 
     print(f"Initial conditions set to: {args.initial_state}")
     print(f"vman bounds: [{lower}, {upper}]")
-    if args.search_bounds is not None:
-        print(f"Search window narrowed to: {args.search_bounds}")
+    if args.tau_bounds is not None:
+        print(f"Search window narrowed to: {args.tau_bounds}")
 
-    # ---- run greedy multi-cut optimizer ----
-    print(f"[DEBUG] Starting greedy optimizer with n_cuts={args.n_cuts}, split_grid_size={args.split_grid_size}")
-    print("[DEBUG] This may take a while...")
-    greedy_res, logs = optimize_vman_greedy_k_cuts(
-        model=model,
-        hybrid_ode=hybrid_model.hybrid_ode,
-        z0=z0,
-        t_span=(args.t_start, args.t_end),
-        t_eval_points=t_eval_points,
-        value_bounds=(lower, upper),
-        x_scaler=x_scaler,
-        y_scaler=y_scaler,
-        objective=args.objective,
-        n_cuts=args.n_cuts,
-        split_grid_size=args.split_grid_size,
-        min_dt=args.min_dt,
-        global_search_bounds=tuple(args.search_bounds) if args.search_bounds else None,
-        inner_polish_maxiter=args.inner_polish_maxiter,
-        final_polish_maxiter=args.final_polish_maxiter,
-        seed=0,
-        verbose=args.verbose,
-        log_full_every_k=args.log_full_every_k,
-    )
-    print("[DEBUG] Greedy optimizer completed")
+    # ---- run optimizer ----
+    if args.mode == "single_cut_to_zero":
+        tau_bounds = tuple(args.tau_bounds) if args.tau_bounds is not None else None
+        v_left_bounds = tuple(args.v_left_bounds) if args.v_left_bounds is not None else None
+        print(f"[DEBUG] Mode: single_cut_to_zero | v_right={args.v_right} | v_left hint={args.v_left} | n_iterations={args.n_iterations} | joint_polish={args.joint_polish} | tau_bounds={tau_bounds} | v_left_bounds={v_left_bounds}")
+        print(f"[DEBUG] split_grid_size={args.split_grid_size}, inner_polish_maxiter={args.inner_polish_maxiter}, final_polish_maxiter={args.final_polish_maxiter}")
+        print("[DEBUG] This may take a while...")
+        greedy_res, logs = optimize_vman_single_cut_to_zero(
+            model=model,
+            hybrid_ode=hybrid_model.hybrid_ode,
+            z0=z0,
+            t_span=(args.t_start, args.t_end),
+            t_eval_points=t_eval_points,
+            value_bounds=(lower, upper),
+            x_scaler=x_scaler,
+            y_scaler=y_scaler,
+            objective=args.objective,
+            v_right=args.v_right,
+            v_left=args.v_left,
+            tau_bounds=tau_bounds,
+            v_left_bounds=v_left_bounds,
+            split_grid_size=args.split_grid_size,
+            min_dt=args.min_dt,
+            inner_polish_maxiter=args.inner_polish_maxiter,
+            final_polish_maxiter=args.final_polish_maxiter,
+            joint_polish=bool(args.joint_polish),
+            n_iterations=args.n_iterations,
+            seed=0,
+            verbose=args.verbose,
+            log_full_every_k=args.log_full_every_k,
+        )
+    else:
+        print(f"[DEBUG] Mode: k_cuts | n_cuts={args.n_cuts}, split_grid_size={args.split_grid_size}")
+        print("[DEBUG] This may take a while...")
+        greedy_res, logs = optimize_vman_greedy_k_cuts(
+            model=model,
+            hybrid_ode=hybrid_model.hybrid_ode,
+            z0=z0,
+            t_span=(args.t_start, args.t_end),
+            t_eval_points=t_eval_points,
+            value_bounds=(lower, upper),
+            x_scaler=x_scaler,
+            y_scaler=y_scaler,
+            objective=args.objective,
+            n_cuts=args.n_cuts,
+            split_grid_size=args.split_grid_size,
+            min_dt=args.min_dt,
+            global_search_bounds=tuple(args.tau_bounds) if args.tau_bounds else None,
+            inner_polish_maxiter=args.inner_polish_maxiter,
+            final_polish_maxiter=args.final_polish_maxiter,
+            seed=0,
+            verbose=args.verbose,
+            log_full_every_k=args.log_full_every_k,
+        )
+    print("[DEBUG] Optimizer completed")
 
     boundaries_true = np.asarray(greedy_res["boundaries"], dtype=float)
     values_true = np.asarray(greedy_res["vman_values"], dtype=float)
@@ -191,7 +245,11 @@ def main():
     )
     print(f"[DEBUG] ODE simulation finished. Success: {sol_opt.success}")
 
-    output_path = args.output_path or (RESULTS_DIR / f"optimize_vman_{args.checkpoint.stem}.npz")
+    if args.output_path is not None:
+        p = Path(args.output_path)
+        output_path = p.parent / f"{p.stem}_{ts}{p.suffix}"
+    else:
+        output_path = RESULTS_DIR / f"optimize_vman_{args.checkpoint.stem}_{ts}.npz"
     output_path.parent.mkdir(parents=True, exist_ok=True)
     print(f"[DEBUG] Output directory created: {output_path.parent}")
 
@@ -233,7 +291,12 @@ def main():
     )
     print("[DEBUG] Main results saved successfully")
 
-    logs_path = args.logs_path or (RESULTS_DIR / f"optimize_vman_{args.checkpoint.stem}_logs.npz")
+    if args.logs_path is not None:
+        lp = Path(args.logs_path)
+        base_stem = lp.stem[:-5] if lp.stem.endswith("_logs") else lp.stem
+        logs_path = lp.parent / f"{base_stem}_{ts}_logs{lp.suffix}"
+    else:
+        logs_path = RESULTS_DIR / f"optimize_vman_{args.checkpoint.stem}_{ts}_logs.npz"
     logs_path.parent.mkdir(parents=True, exist_ok=True)
     print(f"[DEBUG] Saving logs to {logs_path}...")
     np.savez_compressed(logs_path, logs=np.array(logs, dtype=object))

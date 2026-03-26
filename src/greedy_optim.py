@@ -11,8 +11,8 @@ def _objective_state_index(objective: str) -> int:
     return STATE_INDEX[objective]
 
 
-def objective_fn(sol, t_span, objective="biomass"):
-    """Final-value objective (matches your current fallback behavior)."""
+def objective_fn(sol, objective="biomass"):
+    """Final-value objective: returns the final concentration of the target state."""
     obj_idx = _objective_state_index(objective)
     return float(sol.y[obj_idx, -1])
 
@@ -54,7 +54,7 @@ def _simulate(
     if not sol.success:
         return sol, -np.inf
 
-    score = objective_fn(sol, t_span, objective=objective)
+    score = objective_fn(sol, objective=objective)
     return sol, score
 
 
@@ -298,6 +298,200 @@ def optimize_vman_greedy_single_cut(
     }
     return result, logs
 
+def optimize_vman_single_cut_to_zero(
+    model,
+    hybrid_ode,
+    z0,
+    t_span,
+    t_eval_points,
+    value_bounds,
+    x_scaler,
+    y_scaler,
+    objective="ethanol",
+    v_right=0.0,              # fixed value after cut (production phase, ACKr=0)
+    v_left=None,              # warm-start hint for growth-phase ACKr; None falls back to midpoint of v_left_bounds
+    tau_bounds=None,          # (t_lo, t_hi) restrict temporal search for tau; defaults to full t_span
+    v_left_bounds=None,       # (lo, hi) restrict ACKr search in growth phase; defaults to value_bounds
+    split_grid_size=40,
+    min_dt=1e-3,
+    inner_polish_maxiter=80,
+    final_polish_maxiter=300,
+    joint_polish=1,        # also optimize tau in final polish
+    n_iterations=1,           # zoom-in iterations: each narrows window around best tau
+    seed=0,
+    verbose=False,
+    log_full_every_k=10,
+    log_best_full=True,
+):
+    """
+    Finds the optimal single switch time tau and growth-phase value v_left,
+    with the production phase fixed at v_right (default 0, i.e. ACKr=0).
+
+    Algorithm per iteration:
+      1. Sweep tau candidates over current search window.
+      2. For each tau, optimise v_left via Powell (v_right held fixed).
+      3. After sweep, jointly polish (tau, v_left) via Powell.
+      4. Narrow search window around best tau for next iteration (zoom-in).
+
+    Returns (result_dict, logs).
+    """
+    rng = np.random.default_rng(seed)
+    t0, t1 = map(float, t_span)
+
+    # Growth-phase ACKr search bounds (independent of full feasible range)
+    vL_lo = float(v_left_bounds[0]) if v_left_bounds is not None else float(value_bounds[0])
+    vL_hi = float(v_left_bounds[1]) if v_left_bounds is not None else float(value_bounds[1])
+    vL_bounds = (vL_lo, vL_hi)
+
+    logs = []
+    eval_idx = 0
+    best_score = -np.inf
+    best_pack = None  # {"tau", "boundaries", "values", "score"}
+
+    # Initial search window: use tau_bounds if provided, else full range
+    if tau_bounds is not None:
+        tau_lo = max(float(tau_bounds[0]), t0 + min_dt)
+        tau_hi = min(float(tau_bounds[1]), t1 - min_dt)
+    else:
+        tau_lo = t0 + min_dt
+        tau_hi = t1 - min_dt
+    initial_window = tau_hi - tau_lo
+
+    for iteration in range(n_iterations):
+        if verbose:
+            print(f"[iter {iteration+1}/{n_iterations}] sweeping tau in [{tau_lo:.4g}, {tau_hi:.4g}]")
+
+        taus = np.linspace(tau_lo, tau_hi, split_grid_size)
+        # Use warm-start hint if given, otherwise fall back to midpoint
+        v_center = float(np.clip(v_left, vL_lo, vL_hi)) if v_left is not None else float(0.5 * (vL_lo + vL_hi))
+
+        # ---- sweep ----
+        for tau in taus:
+            b = np.array([t0, float(tau), t1], dtype=float)
+
+            # Small random perturbation around warm-start / midpoint
+            v_init = np.clip(
+                v_center + 0.05 * (vL_hi - vL_lo) * rng.standard_normal(),
+                vL_lo, vL_hi,
+            )
+
+            def _cost_left(x_arr, _b=b):
+                vL = float(np.clip(x_arr[0], vL_lo, vL_hi))
+                v = np.array([vL, v_right], dtype=float)
+                sol, score = _simulate(model, hybrid_ode, z0, t_span, t_eval_points,
+                                       _b, v, x_scaler, y_scaler, objective)
+                return np.inf if (sol is None or not sol.success) else -float(score)
+
+            res = minimize(
+                _cost_left,
+                x0=np.array([v_init], dtype=float),
+                method="Powell",
+                bounds=[vL_bounds],
+                options={"maxiter": inner_polish_maxiter, "ftol": 1e-6},
+            )
+
+            v_left = float(np.clip(res.x[0], vL_lo, vL_hi))
+            values_cur = np.array([v_left, v_right], dtype=float)
+            sol, score = _simulate(model, hybrid_ode, z0, t_span, t_eval_points,
+                                   b, values_cur, x_scaler, y_scaler, objective)
+
+            is_new_best = sol.success and score > best_score
+            store_full = (
+                log_full_every_k is not None
+                and log_full_every_k > 0
+                and (eval_idx % log_full_every_k == 0)
+            )
+            if is_new_best and log_best_full:
+                store_full = True
+
+            entry = {
+                "eval_idx": eval_idx,
+                "iteration": iteration,
+                "tau": float(tau),
+                "boundaries": np.copy(b),
+                "vman_values": np.copy(values_cur),
+                "objective": objective,
+                "score": float(score) if sol.success else -np.inf,
+                "solver_success": bool(sol.success),
+                "store_full": bool(store_full),
+                "inner_fun": float(res.fun),
+                "inner_success": bool(res.success),
+            }
+            if store_full and sol.success:
+                obj_idx = _objective_state_index(objective)
+                entry["t"] = sol.t
+                entry["objective_curve"] = sol.y[obj_idx, :]
+            logs.append(entry)
+
+            if is_new_best:
+                best_score = float(score)
+                best_pack = {
+                    "tau": float(tau),
+                    "boundaries": np.copy(b),
+                    "values": np.copy(values_cur),
+                    "score": float(score),
+                }
+                if verbose:
+                    print(f"  [best@eval{eval_idx}] tau={tau:.4g} v_left={v_left:.4g} score={score:.6g}")
+
+            eval_idx += 1
+
+        if best_pack is None:
+            if verbose:
+                print(f"  [iter {iteration+1}] no feasible solution found; aborting.")
+            break
+
+        # ---- joint polish: optimise (tau, v_left) together ----
+        if joint_polish and final_polish_maxiter is not None and final_polish_maxiter > 0:
+            x0_joint = np.array([best_pack["tau"], best_pack["values"][0]], dtype=float)
+
+            def _cost_joint(x_arr):
+                tau_v = float(np.clip(x_arr[0], tau_lo, tau_hi))
+                vL = float(np.clip(x_arr[1], vL_lo, vL_hi))
+                b_j = np.array([t0, tau_v, t1], dtype=float)
+                v_j = np.array([vL, v_right], dtype=float)
+                sol_j, sc_j = _simulate(model, hybrid_ode, z0, t_span, t_eval_points,
+                                        b_j, v_j, x_scaler, y_scaler, objective)
+                return np.inf if (sol_j is None or not sol_j.success) else -float(sc_j)
+
+            polish_res = minimize(
+                _cost_joint,
+                x0=x0_joint,
+                method="Powell",
+                bounds=[(tau_lo, tau_hi), vL_bounds],
+                options={"maxiter": final_polish_maxiter, "ftol": 1e-7},
+            )
+
+            tau_p = float(np.clip(polish_res.x[0], tau_lo, tau_hi))
+            vL_p = float(np.clip(polish_res.x[1], vL_lo, vL_hi))
+            b_p = np.array([t0, tau_p, t1], dtype=float)
+            v_p = np.array([vL_p, v_right], dtype=float)
+            sol_p, score_p = _simulate(model, hybrid_ode, z0, t_span, t_eval_points,
+                                       b_p, v_p, x_scaler, y_scaler, objective)
+
+            if sol_p.success and score_p > best_score:
+                best_score = float(score_p)
+                best_pack = {"tau": tau_p, "boundaries": b_p, "values": v_p, "score": float(score_p)}
+                if verbose:
+                    print(f"  [joint polish iter {iteration+1}] tau={tau_p:.4g} v_left={vL_p:.4g} score={score_p:.6g}")
+
+        # ---- zoom-in: narrow window for next iteration ----
+        if n_iterations > 1 and iteration < n_iterations - 1:
+            zoom_window = initial_window / (2 ** (iteration + 1))
+            tau_lo = max(t0 + min_dt, best_pack["tau"] - zoom_window / 2)
+            tau_hi = min(t1 - min_dt, best_pack["tau"] + zoom_window / 2)
+
+    result = {
+        "tau": best_pack["tau"] if best_pack else None,
+        "boundaries": np.asarray(best_pack["boundaries"], dtype=float) if best_pack else None,
+        "vman_values": np.asarray(best_pack["values"], dtype=float) if best_pack else None,
+        "best_score": float(best_pack["score"]) if best_pack else -np.inf,
+        "objective": objective,
+        "v_right": float(v_right),
+    }
+    return result, logs
+
+
 def optimize_vman_greedy_k_cuts(
     model,
     hybrid_ode,
@@ -318,7 +512,6 @@ def optimize_vman_greedy_k_cuts(
     seed=0,
     verbose=False,
     log_full_every_k=10,
-    log_best_full=True,
 ):
     rng = np.random.default_rng(seed)
     t0, t1 = map(float, t_span)

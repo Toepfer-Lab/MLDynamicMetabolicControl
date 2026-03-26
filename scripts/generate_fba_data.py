@@ -42,6 +42,10 @@ def configure_medium(model, condition: str, objective: str):
     print(f"ACKr value: {solution.fluxes['ACKr']}")
     print(f"glycine uptake: {solution.fluxes['EX_glyc_e']}")
     medium["EX_glc__D_e"] = 10.0  # default glucose uptake
+    medium['EX_o2_e'] = 0.0
+    medium['EX_glyc_e'] = 0.0
+    medium['EX_succ_e'] = 0.0
+    medium['EX_ac_e'] = 0.0
 
     model.medium = medium
     print(medium)

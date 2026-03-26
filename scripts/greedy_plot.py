@@ -11,6 +11,7 @@ Saves PNGs to the plots/ directory by default.
 
 import argparse
 import sys
+from datetime import datetime
 from pathlib import Path
 import numpy as np
 
@@ -30,6 +31,8 @@ def parse_args():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--stem", type=str, default=None,
                    help="If given, loads results/greedy_optimize_vman_<stem>.npz and ..._logs.npz")
+    p.add_argument("--latest", type=str, default=None, metavar="BASE_STEM",
+                   help="Base stem (without timestamp) to find the most recently written matching results file")
     p.add_argument("--results", type=Path, default=None, help="Path to greedy_optimize_vman_*.npz")
     p.add_argument("--logs", type=Path, default=None, help="Path to greedy_optimize_vman_*_logs.npz")
     p.add_argument("--max-curves", type=int, default=0,
@@ -72,7 +75,28 @@ def main():
     outdir = args.outdir or PLOT_DIR
     outdir.mkdir(parents=True, exist_ok=True)
 
-    if args.stem is not None:
+    if args.latest is not None:
+        # --latest accepts a full path prefix (e.g. results/greedy/greedy_optimize_vman_...)
+        base_path = Path(args.latest)
+        search_dir = base_path.parent if base_path.parent != Path(".") else RESULTS_DIR
+        base_stem = base_path.name
+        candidates = sorted(
+            search_dir.glob(f"{base_stem}_????????_??????.npz"),
+            key=lambda p: p.stat().st_mtime,
+            reverse=True,
+        )
+        candidates = [c for c in candidates if not c.stem.endswith("_logs")]
+        if not candidates:
+            raise FileNotFoundError(f"No timestamped results file found matching '{base_stem}_*' in {search_dir}")
+        results_path = candidates[0]
+        # Support both naming conventions:
+        #   new: {base}_{ts}_logs.npz  (timestamp before _logs)
+        #   old: {base}_logs_{ts}.npz  (timestamp after _logs, pre-fix runs)
+        new_logs = results_path.parent / f"{results_path.stem}_logs{results_path.suffix}"
+        ts_suffix = results_path.stem.rsplit("_", 2)  # [..., date, time]
+        old_logs = results_path.parent / f"{base_stem}_logs_{'_'.join(ts_suffix[-2:])}{results_path.suffix}"
+        logs_path = new_logs if new_logs.exists() else old_logs
+    elif args.stem is not None:
         results_path = RESULTS_DIR / f"greedy_optimize_vman_{args.stem}.npz"
         logs_path = RESULTS_DIR / f"greedy_optimize_vman_{args.stem}_logs.npz"
     else:
@@ -80,7 +104,7 @@ def main():
         logs_path = args.logs
 
     if results_path is None or logs_path is None:
-        raise ValueError("Provide either --stem OR both --results and --logs.")
+        raise ValueError("Provide one of: --latest BASE_STEM, --stem STEM, or both --results and --logs.")
     if not results_path.exists():
         raise FileNotFoundError(f"Results file not found: {results_path}")
     if not logs_path.exists():
@@ -119,6 +143,8 @@ def main():
         idxs = np.linspace(0, len(full_entries) - 1, args.max_curves).astype(int)
         full_entries = [full_entries[i] for i in idxs]
 
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+
     plt.figure(figsize=(8, 5))
     for e in full_entries:
         t = np.asarray(e["t"])
@@ -130,7 +156,7 @@ def main():
     plt.ylabel(curve_label)
     plt.title(f"{curve_label} evolution during greedy optimization\n({results_path.stem})")
     plt.grid(True)
-    traj_plot_path = outdir / f"{results_path.stem}_{curve_label.lower()}_trajectories.png"
+    traj_plot_path = outdir / f"{results_path.stem}_{curve_label.lower()}_trajectories_{ts}.png"
     plt.tight_layout()
     plt.savefig(traj_plot_path, dpi=200)
 
@@ -237,7 +263,7 @@ def main():
     fig.legend(h1 + h2, l1 + l2, loc="center left", bbox_to_anchor=(1.02, 0.5))
 
     plt.title(f"Greedy Optimized Control + {curve_label}\n({results_path.stem})")
-    combo_plot_path = outdir / f"{results_path.stem}_control_plus_{curve_label.lower()}.png"
+    combo_plot_path = outdir / f"{results_path.stem}_control_plus_{curve_label.lower()}_{ts}.png"
     plt.savefig(combo_plot_path, dpi=200, bbox_inches="tight")
 
     print(f"Saved trajectories plot to {traj_plot_path}")
