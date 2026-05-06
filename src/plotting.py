@@ -64,10 +64,12 @@ def plot_flux_space(X, Y, feasible_range, vman_id="ACKr", output_labels=None):
     # Combine legends from both axes
     lines_left, labels_left = ax_left.get_legend_handles_labels()
     lines_right, labels_right = ax_right.get_legend_handles_labels()
-    ax_left.legend(
+    ax_right.legend(
         lines_left + lines_right,
         labels_left + labels_right,
-        loc="best"
+        loc="center left",
+        bbox_to_anchor=(1.2, 0.5),
+        borderaxespad=1,
     )
 
     ax_left.grid(True)
@@ -75,4 +77,4 @@ def plot_flux_space(X, Y, feasible_range, vman_id="ACKr", output_labels=None):
     plt.show()
 
     #save the plot to /plots/flux_sweeps/flux_space.png
-    fig.savefig("/home/jkaatz/MA/MLDynamicMetabolicControl/plots/flux_sweeps/flux_space.png")
+    fig.savefig("/home/jkaatz/MA/MLDynamicMetabolicControl/plots/flux_sweeps/flux_space.png", bbox_inches="tight")

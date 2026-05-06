@@ -81,8 +81,8 @@ def generate_fba_data(model, vman, file_path=None, n_samples=1000):
     # STEP 2
     # now we sample with n_samples within our feasible region
     # this way we keep a consistent training point number across potentially different vman fluxes
-    feasible_min = 0.0
-    feasible_max = 10.0
+    #feasible_min = 0.0
+    #feasible_max = 10.0
 
 
 
