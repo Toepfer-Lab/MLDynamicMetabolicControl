@@ -112,6 +112,108 @@ def generate_fba_data(model, vman, file_path=None, n_samples=1000):
         )
     return X, Y, feasible_range
 
+def generate_fba_data_nd(model, vman_ids, output_flux_ids, bounds, n_samples,
+                          output_labels=None, file_path=None, seed=42):
+    """
+    N-D naive uniform sampling for surrogate training data.
+
+    Unlike generate_fba_data (1-D with FVA pre-masking), this function:
+    - Accepts a list of control flux IDs and explicit sampling bounds
+    - Samples the box naively; infeasibility rate is measured and reported
+    - Uses `with model:` context for safe multi-flux pinning
+
+    Parameters
+    ----------
+    model : cobra.Model
+    vman_ids : list of str
+        Reaction IDs to pin as surrogate inputs.
+    output_flux_ids : list of str
+        Reaction IDs to record as surrogate outputs.
+    bounds : list of (float, float)
+        Sampling box; one (lo, hi) tuple per entry in vman_ids.
+    n_samples : int
+        Total draws (includes infeasible; reported as diagnostic).
+    output_labels : list of str or None
+        Human-readable labels for output_flux_ids (for .npz metadata).
+    file_path : str or None
+        Path to save .npz; skipped if None.
+    seed : int
+
+    Returns
+    -------
+    X : np.ndarray, shape (n_feasible, n_inputs)
+    Y : np.ndarray, shape (n_feasible, n_outputs)
+    infeasibility_rate : float
+    """
+    missing_in = [r for r in vman_ids if r not in model.reactions]
+    missing_out = [r for r in output_flux_ids if r not in model.reactions]
+    if missing_in or missing_out:
+        raise KeyError(
+            f"Missing input IDs: {missing_in}  |  Missing output IDs: {missing_out}"
+        )
+
+    if output_labels is None:
+        output_labels = output_flux_ids
+
+    rng = np.random.default_rng(seed)
+    lo = np.array([b[0] for b in bounds], dtype=float)
+    hi = np.array([b[1] for b in bounds], dtype=float)
+    samples = rng.uniform(lo, hi, size=(n_samples, len(vman_ids)))
+
+    X, Y = [], []
+    n_infeasible = 0
+    report_every = max(1, n_samples // 10)
+
+    for i, sample in enumerate(samples):
+        with model:
+            for j, rid in enumerate(vman_ids):
+                model.reactions.get_by_id(rid).bounds = (float(sample[j]), float(sample[j]))
+            sol = model.optimize()
+            if sol.status == "optimal":
+                X.append(sample.tolist())
+                Y.append([sol.fluxes.get(oid, 0.0) for oid in output_flux_ids])
+            else:
+                n_infeasible += 1
+
+        if (i + 1) % report_every == 0:
+            pct = 100 * (i + 1) / n_samples
+            print(f"  {i+1:>6}/{n_samples}  ({pct:.0f}%)  infeasible so far: {n_infeasible}")
+
+    X = np.array(X) if X else np.empty((0, len(vman_ids)))
+    Y = np.array(Y) if Y else np.empty((0, len(output_flux_ids)))
+    infeasibility_rate = n_infeasible / n_samples
+
+    print(f"\n  Total drawn    : {n_samples}")
+    print(f"  Feasible       : {len(X)}")
+    print(f"  Infeasibility  : {100 * infeasibility_rate:.1f}%")
+
+    if len(Y) > 0:
+        print(f"\n  Per-output statistics (unscaled):")
+        print(f"  {'Flux ID':<46}  {'min':>9}  {'max':>9}  {'std':>9}  {'mean':>9}")
+        print(f"  {'─'*90}")
+        for k, oid in enumerate(output_flux_ids):
+            col = Y[:, k]
+            print(f"  {oid:<46}  {col.min():>9.4f}  {col.max():>9.4f}  "
+                  f"{col.std():>9.4f}  {col.mean():>9.4f}")
+
+    if file_path is not None:
+        os.makedirs(os.path.dirname(os.path.abspath(file_path)), exist_ok=True)
+        np.savez_compressed(
+            file_path,
+            X=X,
+            Y=Y,
+            feasible_range=np.column_stack([lo, hi]),   # (n_inputs, 2) — generalised from 1-D
+            flux_order=np.array(output_flux_ids),        # compatible with train_surrogate.py
+            flux_labels=np.array(output_labels),
+            input_flux_ids=np.array(vman_ids),
+            n_samples_total=n_samples,
+            infeasibility_rate=infeasibility_rate,
+        )
+        print(f"\n  Saved to {file_path}")
+
+    return X, Y, infeasibility_rate
+
+
 def list_infeasible_regions(feasibility_dict, rxn_id):
     """
     Identify continuous infeasible regions for a given manipulated reaction.

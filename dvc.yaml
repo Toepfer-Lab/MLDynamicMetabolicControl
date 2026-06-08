@@ -144,3 +144,45 @@ stages:
       - scripts/greedy_plot.py
     outs:
       - plots/greedy_${data.objective}_tend-${optimize.t_end}/
+
+  # ------------------------------------------------------------------
+  # iJO1366 genome-scale benchmark pipeline (Stages 2-3)
+  # Run with: dvc repro ijo_train_surrogate
+  # ------------------------------------------------------------------
+
+  ijo_generate_data:
+    cmd: >
+      python scripts/ijo1366_generate_data.py
+      --n-samples ${ijo_data.n_samples}
+      --condition ${ijo_data.condition}
+      --model-path ${ijo_data.model_path}
+    deps:
+      - scripts/ijo1366_generate_data.py
+      - src/FBA_data_generation.py
+      - src/flux_config_ijo1366.py
+    params:
+      - ijo_data
+    outs:
+      - data/ijo1366_${ijo_data.condition}.npz
+
+  ijo_train_surrogate:
+    cmd: >
+      python scripts/train_surrogate.py
+      --vman ijo1366
+      --condition ${ijo_data.condition}
+      --hidden-dim ${ijo_training.hidden_dim}
+      --epochs ${ijo_training.epochs}
+      --patience ${ijo_training.patience}
+      --lr ${ijo_training.lr}
+      --data-path data/ijo1366_${ijo_data.condition}.npz
+      --model-name ijo1366_${ijo_data.condition}_hidden-${ijo_training.hidden_dim}
+    deps:
+      - data/ijo1366_${ijo_data.condition}.npz
+      - scripts/train_surrogate.py
+      - src/surrogateNN.py
+      - src/runtime_utils.py
+    params:
+      - ijo_training
+      - ijo_data.condition
+    outs:
+      - trained_models/ijo1366_${ijo_data.condition}_hidden-${ijo_training.hidden_dim}.pt
