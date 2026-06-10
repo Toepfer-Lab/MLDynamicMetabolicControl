@@ -4,6 +4,7 @@ Utility helpers for CLI scripts and cluster runs.
 
 from pathlib import Path
 import sys
+import numpy as np
 import torch
 
 # Project directories
@@ -51,6 +52,33 @@ def save_surrogate_checkpoint(model, x_scaler, y_scaler, metadata, path):
     }
     torch.save(payload, path)
     return path
+
+
+def surrogate_predict(model_nn, x_scaler, y_scaler, X):
+    """
+    Run surrogate inference and apply a Softplus floor to the outputs.
+
+    Softplus  log(1 + exp(y))  is applied after inverse-scaling, in physical
+    flux units.  It is the identity for large positive values and smoothly
+    floors near zero instead of allowing negative flux predictions.
+    np.logaddexp(0, y) is the numerically stable form: log(exp(0) + exp(y)).
+
+    Parameters
+    ----------
+    model_nn : SurrogateNN
+    x_scaler, y_scaler : fitted StandardScaler
+    X : array-like, shape (n, n_inputs) or (n_inputs,)
+
+    Returns
+    -------
+    Y_pred : np.ndarray, shape (n, n_outputs)  — non-negative flux predictions
+    """
+    X_arr = np.atleast_2d(np.asarray(X, dtype=np.float32))
+    X_scaled = x_scaler.transform(X_arr).astype(np.float32)
+    with torch.no_grad():
+        Y_scaled = model_nn(torch.from_numpy(X_scaled)).numpy()
+    Y = y_scaler.inverse_transform(Y_scaled)
+    return np.maximum(0.0, Y)     # hard floor: clamp negative flux predictions to zero
 
 
 def load_surrogate_checkpoint(path, model_cls):

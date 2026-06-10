@@ -33,6 +33,11 @@ ijo_training:
   patience: 50
   lr: 0.001
 
+ijo_plot:
+  n_ldh_slices: 4
+  n_ackr_sweep: 300
+  band_fraction: 0.06
+
 optimize_greedy:
   mode: k_cuts   # "single_cut_to_zero" or "k_cuts"
   # single_cut_to_zero params

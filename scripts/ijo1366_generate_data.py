@@ -7,13 +7,14 @@ solves the LP for each point, and records feasible output fluxes.
 Sampling bounds come from FVA with SAMPLING_BOUNDS_OVERRIDE applied on top.
 
 Infeasibility rate and per-output statistics are printed as diagnostics.
-Review them before proceeding to Stage 3 (surrogate training).
+To be reviewed before proceeding to Stage 3 (surrogate training).
 
 Usage:
     python scripts/ijo1366_generate_data.py
     python scripts/ijo1366_generate_data.py --n-samples 5000
     python scripts/ijo1366_generate_data.py --n-samples 100   # quick smoke test
 """
+
 
 import argparse
 import sys
@@ -82,7 +83,7 @@ def compute_effective_bounds(model, input_ids, overrides):
 def parse_args():
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--n-samples", type=int, default=5000,
+    parser.add_argument("--n-samples", type=int, default=500,
                         help="Total samples drawn (default: 5000)")
     parser.add_argument("--condition", choices=["aerobic", "anaerobic"], default="anaerobic",
                         help="Medium condition (default: anaerobic)")
@@ -128,7 +129,7 @@ def main():
     # Generate data
     print(f"\n── Generating {args.n_samples} samples ─────────────────────────────────────")
     t0 = time.time()
-    X, Y, infeasibility_rate = generate_fba_data_nd(
+    X, Y, X_infeasible, infeasibility_rate = generate_fba_data_nd(
         model,
         vman_ids=INPUT_FLUX_IDS,
         output_flux_ids=OUTPUT_FLUX_IDS,
@@ -141,16 +142,18 @@ def main():
     elapsed = time.time() - t0
 
     print(f"\n── Summary ─────────────────────────────────────────────────────")
-    print(f"  Wall time  : {elapsed:.1f}s  ({1000 * elapsed / args.n_samples:.1f} ms/sample)")
-    print(f"  Dataset    : X={X.shape}, Y={Y.shape}")
-    print(f"  Saved to   : {output_path}")
+    print(f"  Wall time      : {elapsed:.1f}s  ({1000 * elapsed / args.n_samples:.1f} ms/sample)")
+    print(f"  X (feasible)   : {X.shape}")
+    print(f"  Y              : {Y.shape}")
+    print(f"  X_infeasible   : {X_infeasible.shape}  (saved for boundary analysis)")
+    print(f"  Saved to       : {output_path}")
     print()
-    if infeasibility_rate > 0.1:
-        print("  WARNING: infeasibility > 10% — consider tightening SAMPLING_BOUNDS_OVERRIDE.")
-    else:
-        print("  Proceed to Stage 3:")
-        print(f"    python scripts/train_surrogate.py --data-path {output_path} "
-              f"--hidden-dim 16 --vman ijo1366")
+    print(f"  Infeasibility  : {100 * infeasibility_rate:.1f}%  "
+          f"({'OK — expected joint-constraint corner effects' if infeasibility_rate <= 0.25 else 'HIGH — consider tightening SAMPLING_BOUNDS_OVERRIDE'})")
+    print()
+    print("  Proceed to Stage 3:")
+    print(f"    python scripts/train_surrogate.py --data-path {output_path} "
+          f"--hidden-dim 16 --vman ijo1366")
 
 
 if __name__ == "__main__":

@@ -186,3 +186,28 @@ stages:
       - ijo_data.condition
     outs:
       - trained_models/ijo1366_${ijo_data.condition}_hidden-${ijo_training.hidden_dim}.pt
+
+  ijo_plot_flux_maps:
+    cmd: >
+      python scripts/ijo1366_plot_flux_maps.py
+      --data-path data/ijo1366_${ijo_data.condition}.npz
+      --checkpoint trained_models/ijo1366_${ijo_data.condition}_hidden-${ijo_training.hidden_dim}.pt
+      --outdir plots/ijo1366_flux_maps
+      --n-ldh-slices ${ijo_plot.n_ldh_slices}
+      --n-ackr-sweep ${ijo_plot.n_ackr_sweep}
+      --band-fraction ${ijo_plot.band_fraction}
+    deps:
+      - scripts/ijo1366_plot_flux_maps.py
+      - data/ijo1366_${ijo_data.condition}.npz
+      - trained_models/ijo1366_${ijo_data.condition}_hidden-${ijo_training.hidden_dim}.pt
+      - src/flux_config_ijo1366.py
+      - src/runtime_utils.py
+      - src/surrogateNN.py
+    params:
+      - ijo_data.condition
+      - ijo_training.hidden_dim
+      - ijo_plot
+    outs:
+      - plots/ijo1366_flux_maps/:
+          cache: false
+          persist: true

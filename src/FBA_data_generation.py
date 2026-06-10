@@ -160,8 +160,14 @@ def generate_fba_data_nd(model, vman_ids, output_flux_ids, bounds, n_samples,
     hi = np.array([b[1] for b in bounds], dtype=float)
     samples = rng.uniform(lo, hi, size=(n_samples, len(vman_ids)))
 
-    X, Y = [], []
-    n_infeasible = 0
+    # GLPK can hang indefinitely on degenerate LP instances.
+    # Setting a timeout causes it to return a non-optimal status instead.
+    try:
+        model.solver.configuration.timeout = 5
+    except Exception:
+        pass
+
+    X, Y, X_infeasible = [], [], []
     report_every = max(1, n_samples // 10)
 
     for i, sample in enumerate(samples):
@@ -173,15 +179,16 @@ def generate_fba_data_nd(model, vman_ids, output_flux_ids, bounds, n_samples,
                 X.append(sample.tolist())
                 Y.append([sol.fluxes.get(oid, 0.0) for oid in output_flux_ids])
             else:
-                n_infeasible += 1
+                X_infeasible.append(sample.tolist())
 
         if (i + 1) % report_every == 0:
             pct = 100 * (i + 1) / n_samples
-            print(f"  {i+1:>6}/{n_samples}  ({pct:.0f}%)  infeasible so far: {n_infeasible}")
+            print(f"  {i+1:>6}/{n_samples}  ({pct:.0f}%)  infeasible so far: {len(X_infeasible)}")
 
     X = np.array(X) if X else np.empty((0, len(vman_ids)))
     Y = np.array(Y) if Y else np.empty((0, len(output_flux_ids)))
-    infeasibility_rate = n_infeasible / n_samples
+    X_infeasible = np.array(X_infeasible) if X_infeasible else np.empty((0, len(vman_ids)))
+    infeasibility_rate = len(X_infeasible) / n_samples
 
     print(f"\n  Total drawn    : {n_samples}")
     print(f"  Feasible       : {len(X)}")
@@ -202,8 +209,9 @@ def generate_fba_data_nd(model, vman_ids, output_flux_ids, bounds, n_samples,
             file_path,
             X=X,
             Y=Y,
-            feasible_range=np.column_stack([lo, hi]),   # (n_inputs, 2) — generalised from 1-D
-            flux_order=np.array(output_flux_ids),        # compatible with train_surrogate.py
+            X_infeasible=X_infeasible,               # input coords of infeasible draws
+            feasible_range=np.column_stack([lo, hi]),
+            flux_order=np.array(output_flux_ids),
             flux_labels=np.array(output_labels),
             input_flux_ids=np.array(vman_ids),
             n_samples_total=n_samples,
@@ -211,7 +219,7 @@ def generate_fba_data_nd(model, vman_ids, output_flux_ids, bounds, n_samples,
         )
         print(f"\n  Saved to {file_path}")
 
-    return X, Y, infeasibility_rate
+    return X, Y, X_infeasible, infeasibility_rate
 
 
 def list_infeasible_regions(feasibility_dict, rxn_id):

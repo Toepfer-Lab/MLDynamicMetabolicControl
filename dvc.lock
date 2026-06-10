@@ -222,3 +222,107 @@ stages:
       md5: ed99e9ef4cf58c6c5d03166a7911004f.dir
       size: 293595
       nfiles: 2
+  ijo_generate_data:
+    cmd: "python scripts/ijo1366_generate_data.py --n-samples 5000 --condition anaerobic
+      --model-path model/iJO1366.xml\n"
+    deps:
+    - path: scripts/ijo1366_generate_data.py
+      hash: md5
+      md5: 3c7d928a0c8d64b7e61175c4ecb6be28
+      size: 6589
+    - path: src/FBA_data_generation.py
+      hash: md5
+      md5: c3077bee6a8773e784e46238099ee1e3
+      size: 10051
+    - path: src/flux_config_ijo1366.py
+      hash: md5
+      md5: 9e62aeb348e0ff72ffca04f9c9939f6d
+      size: 1550
+    params:
+      params.yaml:
+        ijo_data:
+          model_path: model/iJO1366.xml
+          condition: anaerobic
+          n_samples: 5000
+    outs:
+    - path: data/ijo1366_anaerobic.npz
+      hash: md5
+      md5: 40c0ac1964f7edc95454e4fa069374ee
+      size: 198524
+  ijo_train_surrogate:
+    cmd: "python scripts/train_surrogate.py --vman ijo1366 --condition anaerobic --hidden-dim
+      16 --epochs 2000 --patience 50 --lr 0.001 --data-path data/ijo1366_anaerobic.npz
+      --model-name ijo1366_anaerobic_hidden-16\n"
+    deps:
+    - path: data/ijo1366_anaerobic.npz
+      hash: md5
+      md5: 40c0ac1964f7edc95454e4fa069374ee
+      size: 198524
+    - path: scripts/train_surrogate.py
+      hash: md5
+      md5: 49b762e45d1d41fa991d77845d383efb
+      size: 4887
+    - path: src/runtime_utils.py
+      hash: md5
+      md5: ec0dd2e68c0ca4eefbd0fe0a118e3ceb
+      size: 3205
+    - path: src/surrogateNN.py
+      hash: md5
+      md5: e8785c1a7f71143eaff1b43ecb9bcfc8
+      size: 6208
+    params:
+      params.yaml:
+        ijo_data.condition: anaerobic
+        ijo_training:
+          hidden_dim: 16
+          epochs: 2000
+          patience: 50
+          lr: 0.001
+    outs:
+    - path: trained_models/ijo1366_anaerobic_hidden-16.pt
+      hash: md5
+      md5: b3de98ea6d51eee87cba62c65cc26643
+      size: 4837
+  ijo_plot_flux_maps:
+    cmd: "python scripts/ijo1366_plot_flux_maps.py --data-path data/ijo1366_anaerobic.npz
+      --checkpoint trained_models/ijo1366_anaerobic_hidden-16.pt --outdir plots/ijo1366_flux_maps
+      --n-ldh-slices 4 --n-ackr-sweep 300 --band-fraction 0.06\n"
+    deps:
+    - path: data/ijo1366_anaerobic.npz
+      hash: md5
+      md5: 40c0ac1964f7edc95454e4fa069374ee
+      size: 198524
+    - path: scripts/ijo1366_plot_flux_maps.py
+      hash: md5
+      md5: 311ee029e5d6e0d8d4c5aa7c50992a5f
+      size: 6565
+    - path: src/flux_config_ijo1366.py
+      hash: md5
+      md5: 9e62aeb348e0ff72ffca04f9c9939f6d
+      size: 1550
+    - path: src/runtime_utils.py
+      hash: md5
+      md5: ec0dd2e68c0ca4eefbd0fe0a118e3ceb
+      size: 3205
+    - path: src/surrogateNN.py
+      hash: md5
+      md5: e8785c1a7f71143eaff1b43ecb9bcfc8
+      size: 6208
+    - path: trained_models/ijo1366_anaerobic_hidden-16.pt
+      hash: md5
+      md5: b3de98ea6d51eee87cba62c65cc26643
+      size: 4837
+    params:
+      params.yaml:
+        ijo_data.condition: anaerobic
+        ijo_plot:
+          n_ldh_slices: 4
+          n_ackr_sweep: 300
+          band_fraction: 0.06
+        ijo_training.hidden_dim: 16
+    outs:
+    - path: plots/ijo1366_flux_maps/
+      hash: md5
+      md5: 2b3e55f5dc0be9c2c1e30ab83cb1d35e.dir
+      size: 566165
+      nfiles: 2
