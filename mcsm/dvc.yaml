@@ -1,0 +1,106 @@
+# All paths below are relative to this file's directory (mcsm/).
+# Commands run with cwd=mcsm/, so "../" resolves to the repo root.
+
+stages:
+
+  mcsm_generate_data:
+    cmd: >
+      python ../scripts/mcsm_generate_data.py
+      --n-samples ${mcsm_data.n_samples}
+      --fraction ${mcsm_data.fraction}
+      --model-path ../${mcsm_data.model_path}
+      --medium-path ../${mcsm_data.medium_path}
+      --output ../${mcsm_data.output}
+    deps:
+      - ../scripts/mcsm_generate_data.py
+      - ../model/dcom.pickle
+      - ../data/Completed_maize_leaf_medium.csv
+    params:
+      - params.yaml:
+          - mcsm_data.n_samples
+          - mcsm_data.fraction
+          - mcsm_data.model_path
+          - mcsm_data.medium_path
+          - mcsm_data.output
+    outs:
+      - ../data/mcsm_training.npz:
+          cache: false
+          persist: true
+
+  mcsm_train_surrogate:
+    cmd: >
+      python ../scripts/train_surrogate.py
+      --vman mcsm
+      --condition community
+      --data-path ../${mcsm_data.output}
+      --hidden-dim ${mcsm_training.hidden_dim}
+      --epochs ${mcsm_training.epochs}
+      --patience ${mcsm_training.patience}
+      --lr ${mcsm_training.lr}
+      --model-name mcsm_community_input-6_output-6_hidden-${mcsm_training.hidden_dim}
+    deps:
+      - ../scripts/train_surrogate.py
+      - ../src/surrogateNN.py
+      - ../src/runtime_utils.py
+      - ../data/mcsm_training.npz
+    params:
+      - params.yaml:
+          - mcsm_training.hidden_dim
+          - mcsm_training.epochs
+          - mcsm_training.patience
+          - mcsm_training.lr
+    outs:
+      - ../trained_models/mcsm_community_input-6_output-6_hidden-${mcsm_training.hidden_dim}.pt:
+          cache: false
+          persist: true
+      - ../trained_models/mcsm_community_input-6_output-6_hidden-${mcsm_training.hidden_dim}_metrics.json:
+          cache: false
+          persist: true
+
+  mcsm_simulate_lp:
+    # Runs the existing simulation script (hardcoded params). Run manually via sbatch.
+    cmd: python ../scripts/mcsm_simulate.py
+    deps:
+      - ../scripts/mcsm_simulate.py
+      - ../model/dcom.pickle
+      - ../data/Completed_maize_leaf_medium.csv
+    outs:
+      - ../results/mcsm_trajectories.npz:
+          cache: false
+          persist: true
+      - ../results/mcsm_landscape.npz:
+          cache: false
+          persist: true
+
+  mcsm_simulate_surrogate:
+    # Requires mcsm_ode_surrogate.py (to be created after first training run).
+    cmd: >
+      python ../scripts/mcsm_ode_surrogate.py
+      --checkpoint ../trained_models/mcsm_community_input-6_output-6_hidden-${mcsm_training.hidden_dim}.pt
+      --lp-trajectories ../results/mcsm_trajectories.npz
+      --output ../results/mcsm_surrogate_trajectories.npz
+      --n-steps ${mcsm_simulate_surrogate.n_steps}
+      --dt ${mcsm_simulate_surrogate.dt}
+    deps:
+      - ../scripts/mcsm_ode_surrogate.py
+      - ../trained_models/mcsm_community_input-6_output-6_hidden-${mcsm_training.hidden_dim}.pt
+      - ../results/mcsm_trajectories.npz
+    params:
+      - params.yaml:
+          - mcsm_simulate_surrogate.n_steps
+          - mcsm_simulate_surrogate.dt
+    outs:
+      - ../results/mcsm_surrogate_trajectories.npz:
+          cache: false
+          persist: true
+
+  mcsm_plot:
+    cmd: python ../scripts/mcsm_plot_trajectories.py
+    deps:
+      - ../scripts/mcsm_plot_trajectories.py
+      - ../results/mcsm_trajectories.npz
+      - ../results/mcsm_landscape.npz
+    outs:
+      - ../plots/mcsm/:
+          cache: false
+          persist: true

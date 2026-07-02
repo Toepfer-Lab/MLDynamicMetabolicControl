@@ -223,7 +223,7 @@ stages:
       size: 293595
       nfiles: 2
   ijo_generate_data:
-    cmd: "python scripts/ijo1366_generate_data.py --n-samples 5000 --condition anaerobic
+    cmd: "python scripts/ijo1366_generate_data.py --n-samples 50000 --condition anaerobic
       --model-path model/iJO1366.xml\n"
     deps:
     - path: scripts/ijo1366_generate_data.py
@@ -243,12 +243,12 @@ stages:
         ijo_data:
           model_path: model/iJO1366.xml
           condition: anaerobic
-          n_samples: 5000
+          n_samples: 50000
     outs:
     - path: data/ijo1366_anaerobic.npz
       hash: md5
-      md5: 40c0ac1964f7edc95454e4fa069374ee
-      size: 198524
+      md5: e6f24a541480a3ae6c5670a115bc33d0
+      size: 1963360
   ijo_train_surrogate:
     cmd: "python scripts/train_surrogate.py --vman ijo1366 --condition anaerobic --hidden-dim
       16 --epochs 2000 --patience 50 --lr 0.001 --data-path data/ijo1366_anaerobic.npz
@@ -256,8 +256,8 @@ stages:
     deps:
     - path: data/ijo1366_anaerobic.npz
       hash: md5
-      md5: 40c0ac1964f7edc95454e4fa069374ee
-      size: 198524
+      md5: e6f24a541480a3ae6c5670a115bc33d0
+      size: 1963360
     - path: scripts/train_surrogate.py
       hash: md5
       md5: 49b762e45d1d41fa991d77845d383efb
@@ -281,7 +281,7 @@ stages:
     outs:
     - path: trained_models/ijo1366_anaerobic_hidden-16.pt
       hash: md5
-      md5: b3de98ea6d51eee87cba62c65cc26643
+      md5: 159f527fe2f7ac8e0e9333bb453c4b46
       size: 4837
   ijo_plot_flux_maps:
     cmd: "python scripts/ijo1366_plot_flux_maps.py --data-path data/ijo1366_anaerobic.npz
@@ -326,3 +326,128 @@ stages:
       md5: 2b3e55f5dc0be9c2c1e30ab83cb1d35e.dir
       size: 566165
       nfiles: 2
+  ijo_benchmark_lp:
+    cmd: "python scripts/ijo1366_benchmark_lp.py --grid-n 10 --t-end 10.0 --bm0 0.01
+      --glc0 10.0 --condition anaerobic --model-path model/iJO1366.xml --data-path
+      data/ijo1366_anaerobic.npz --output results/ijo1366_benchmark_lp.npz\n"
+    deps:
+    - path: data/ijo1366_anaerobic.npz
+      hash: md5
+      md5: e6f24a541480a3ae6c5670a115bc33d0
+      size: 1963360
+    - path: scripts/ijo1366_benchmark_lp.py
+      hash: md5
+      md5: d86f85d0d4ca65611351b723f4fdc945
+      size: 8405
+    - path: src/flux_config_ijo1366.py
+      hash: md5
+      md5: 9e62aeb348e0ff72ffca04f9c9939f6d
+      size: 1550
+    - path: src/runtime_utils.py
+      hash: md5
+      md5: ec0dd2e68c0ca4eefbd0fe0a118e3ceb
+      size: 3205
+    params:
+      params.yaml:
+        ijo_benchmark:
+          grid_n: 10
+          t_end: 10.0
+          bm0: 0.01
+          glc0: 10.0
+        ijo_data.condition: anaerobic
+        ijo_data.model_path: model/iJO1366.xml
+    outs:
+    - path: results/ijo1366_benchmark_lp.npz
+      hash: md5
+      md5: 4b00e04c19e1d117d9fd97b6ecb55c3e
+      size: 2997
+  ijo_benchmark_piecewise_surrogate:
+    cmd: "python scripts/ijo1366_benchmark_piecewise_surrogate.py --grid-n 10 --tau
+      5.0 --t-end 10.0 --bm0 0.01 --glc0 10.0 --piecewise-lp-results results/ijo1366_benchmark_piecewise_lp.npz
+      --data-path data/ijo1366_anaerobic.npz --checkpoint trained_models/ijo1366_anaerobic_hidden-16.pt
+      --output results/ijo1366_benchmark_piecewise_surrogate.npz\n"
+    deps:
+    - path: data/ijo1366_anaerobic.npz
+      hash: md5
+      md5: e6f24a541480a3ae6c5670a115bc33d0
+      size: 1963360
+    - path: results/ijo1366_benchmark_piecewise_lp.npz
+      hash: md5
+      md5: afccc078027ca48bb69c6f6b15d14fe1
+      size: 3893
+    - path: scripts/ijo1366_benchmark_piecewise_surrogate.py
+      hash: md5
+      md5: ec204adcae93766161213d29db8047ac
+      size: 8749
+    - path: src/flux_config_ijo1366.py
+      hash: md5
+      md5: 9e62aeb348e0ff72ffca04f9c9939f6d
+      size: 1550
+    - path: src/runtime_utils.py
+      hash: md5
+      md5: ec0dd2e68c0ca4eefbd0fe0a118e3ceb
+      size: 3205
+    - path: src/surrogateNN.py
+      hash: md5
+      md5: e8785c1a7f71143eaff1b43ecb9bcfc8
+      size: 6208
+    - path: trained_models/ijo1366_anaerobic_hidden-16.pt
+      hash: md5
+      md5: 159f527fe2f7ac8e0e9333bb453c4b46
+      size: 4837
+    params:
+      params.yaml:
+        ijo_benchmark_piecewise:
+          grid_n: 10
+          tau: 5.0
+          t_end: 10.0
+          bm0: 0.01
+          glc0: 10.0
+        ijo_data.condition: anaerobic
+        ijo_training.hidden_dim: 16
+    outs:
+    - path: results/ijo1366_benchmark_piecewise_surrogate.npz
+      hash: md5
+      md5: 4fc6d76b5473492300d99cc8b5895799
+      size: 3951
+  ijo_benchmark_piecewise_lp:
+    cmd: "python scripts/ijo1366_benchmark_piecewise_lp.py --grid-n 10 --tau 5.0 --t-end
+      10.0 --bm0 0.01 --glc0 10.0 --condition anaerobic --model-path model/iJO1366.xml
+      --lp-results results/ijo1366_benchmark_lp.npz --data-path data/ijo1366_anaerobic.npz
+      --output results/ijo1366_benchmark_piecewise_lp.npz\n"
+    deps:
+    - path: data/ijo1366_anaerobic.npz
+      hash: md5
+      md5: e6f24a541480a3ae6c5670a115bc33d0
+      size: 1963360
+    - path: results/ijo1366_benchmark_lp.npz
+      hash: md5
+      md5: 4b00e04c19e1d117d9fd97b6ecb55c3e
+      size: 2997
+    - path: scripts/ijo1366_benchmark_piecewise_lp.py
+      hash: md5
+      md5: d74b524c39873d7a5d820346c57dacd5
+      size: 10193
+    - path: src/flux_config_ijo1366.py
+      hash: md5
+      md5: 9e62aeb348e0ff72ffca04f9c9939f6d
+      size: 1550
+    - path: src/runtime_utils.py
+      hash: md5
+      md5: ec0dd2e68c0ca4eefbd0fe0a118e3ceb
+      size: 3205
+    params:
+      params.yaml:
+        ijo_benchmark_piecewise:
+          grid_n: 10
+          tau: 5.0
+          t_end: 10.0
+          bm0: 0.01
+          glc0: 10.0
+        ijo_data.condition: anaerobic
+        ijo_data.model_path: model/iJO1366.xml
+    outs:
+    - path: results/ijo1366_benchmark_piecewise_lp.npz
+      hash: md5
+      md5: afccc078027ca48bb69c6f6b15d14fe1
+      size: 3893

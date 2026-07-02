@@ -25,7 +25,7 @@ optimize:
 ijo_data:
   model_path: model/iJO1366.xml
   condition: anaerobic
-  n_samples: 5000
+  n_samples: 50000
 
 ijo_training:
   hidden_dim: 16
@@ -37,6 +37,19 @@ ijo_plot:
   n_ldh_slices: 4
   n_ackr_sweep: 300
   band_fraction: 0.06
+
+ijo_benchmark:
+  grid_n: 10      # N×N = 100 simulations per route
+  t_end: 10.0     # h
+  bm0: 0.01       # gDW/L
+  glc0: 10.0      # mM
+
+ijo_benchmark_piecewise:
+  grid_n: 10      # N×N phase-2 grid = 100 simulations per route
+  tau: 5.0        # phase switch time (h): grow for tau h, produce for t_end-tau h
+  t_end: 10.0     # h
+  bm0: 0.01       # gDW/L
+  glc0: 10.0      # mM
 
 optimize_greedy:
   mode: k_cuts   # "single_cut_to_zero" or "k_cuts"

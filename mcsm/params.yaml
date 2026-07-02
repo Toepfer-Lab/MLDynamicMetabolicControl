@@ -1,0 +1,26 @@
+# params.yaml — MCSM pipeline (community surrogate)
+
+mcsm_data:
+  n_samples: 5000
+  fraction: 0.5
+  model_path: model/dcom.pickle
+  medium_path: data/Completed_maize_leaf_medium.csv
+  output: data/mcsm_training.npz
+
+mcsm_training:
+  hidden_dim: 64
+  n_layers: 2
+  epochs: 3000
+  patience: 100
+  lr: 0.001
+  # model name written by train_surrogate.py:
+  # trained_models/mcsm_community_input-6_output-6_hidden-{hidden_dim}.pt
+
+mcsm_simulate_lp:
+  n_steps: 80
+  dt: 0.1
+  fraction: 0.5
+
+mcsm_simulate_surrogate:
+  n_steps: 80
+  dt: 0.1

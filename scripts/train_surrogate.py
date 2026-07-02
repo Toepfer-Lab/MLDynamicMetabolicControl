@@ -43,6 +43,7 @@ def parse_args():
         help="Path to .npz file produced by generate_fba_data.py",
     )
     parser.add_argument("--hidden-dim", type=int, default=4, help="Number of hidden neurons")
+    parser.add_argument("--n-layers", type=int, default=1, help="Number of hidden layers")
     parser.add_argument("--epochs", type=int, default=5000, help="Max training epochs")
     parser.add_argument("--patience", type=int, default=50, help="Early stopping patience")
     parser.add_argument("--lr", type=float, default=1e-3, help="Learning rate")
@@ -80,6 +81,7 @@ def main():
         input_dim=X_train.shape[1],
         output_dim=Y_train.shape[1],
         hidden_dim=args.hidden_dim,
+        n_layers=args.n_layers,
     )
     loss_fn = nn.MSELoss()
 
@@ -113,6 +115,7 @@ def main():
         "condition": args.condition,
         "feasible_range": feasible_range.tolist(),
         "hidden_dim": args.hidden_dim,
+        "n_layers": args.n_layers,
         "epochs": args.epochs,
         "patience": args.patience,
         "lr": args.lr,

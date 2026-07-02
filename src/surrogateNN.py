@@ -27,19 +27,20 @@ class SurrogateNN(nn.Module):
         Number of output fluxes predicted (e.g., ethanol, CO₂, biomass).
     """
 
-    def __init__(self, input_dim=1, hidden_dim=10, output_dim=3):
+    def __init__(self, input_dim=1, hidden_dim=10, output_dim=3, n_layers=1):
         super().__init__()
         self.input_dim = input_dim
         self.hidden_dim = hidden_dim
         self.output_dim = output_dim
-        print(f"Initializing SurrogateNN with input_dim={input_dim}, hidden_dim={hidden_dim}, output_dim={output_dim}")
+        self.n_layers = n_layers
+        print(f"Initializing SurrogateNN with input_dim={input_dim}, hidden_dim={hidden_dim}, "
+              f"output_dim={output_dim}, n_layers={n_layers}")
 
-        # Define the network as a sequential stack of layers
-        self.net = nn.Sequential(
-            nn.Linear(input_dim, hidden_dim),  # Linear layer: input → hidden
-            nn.ReLU(),                         # Nonlinearity
-            nn.Linear(hidden_dim, output_dim)  # Linear layer: hidden → output
-        )
+        layers = [nn.Linear(input_dim, hidden_dim), nn.ReLU()]
+        for _ in range(n_layers - 1):
+            layers += [nn.Linear(hidden_dim, hidden_dim), nn.ReLU()]
+        layers.append(nn.Linear(hidden_dim, output_dim))
+        self.net = nn.Sequential(*layers)
 
     def forward(self, x):
         """

@@ -211,3 +211,127 @@ stages:
       - plots/ijo1366_flux_maps/:
           cache: false
           persist: true
+
+  ijo_benchmark_lp:
+    cmd: >
+      python scripts/ijo1366_benchmark_lp.py
+      --grid-n ${ijo_benchmark.grid_n}
+      --t-end ${ijo_benchmark.t_end}
+      --bm0 ${ijo_benchmark.bm0}
+      --glc0 ${ijo_benchmark.glc0}
+      --condition ${ijo_data.condition}
+      --model-path ${ijo_data.model_path}
+      --data-path data/ijo1366_${ijo_data.condition}.npz
+      --output results/ijo1366_benchmark_lp.npz
+    deps:
+      - scripts/ijo1366_benchmark_lp.py
+      - data/ijo1366_${ijo_data.condition}.npz
+      - src/flux_config_ijo1366.py
+      - src/runtime_utils.py
+    params:
+      - ijo_benchmark
+      - ijo_data.condition
+      - ijo_data.model_path
+    outs:
+      - results/ijo1366_benchmark_lp.npz:
+          cache: false
+          persist: true
+
+  ijo_benchmark_surrogate:
+    cmd: >
+      python scripts/ijo1366_benchmark_surrogate.py
+      --grid-n ${ijo_benchmark.grid_n}
+      --t-end ${ijo_benchmark.t_end}
+      --bm0 ${ijo_benchmark.bm0}
+      --glc0 ${ijo_benchmark.glc0}
+      --data-path data/ijo1366_${ijo_data.condition}.npz
+      --checkpoint trained_models/ijo1366_${ijo_data.condition}_hidden-${ijo_training.hidden_dim}.pt
+      --output results/ijo1366_benchmark_surrogate.npz
+    deps:
+      - scripts/ijo1366_benchmark_surrogate.py
+      - data/ijo1366_${ijo_data.condition}.npz
+      - trained_models/ijo1366_${ijo_data.condition}_hidden-${ijo_training.hidden_dim}.pt
+      - src/flux_config_ijo1366.py
+      - src/runtime_utils.py
+      - src/surrogateNN.py
+    params:
+      - ijo_benchmark
+      - ijo_data.condition
+      - ijo_training.hidden_dim
+    outs:
+      - results/ijo1366_benchmark_surrogate.npz:
+          cache: false
+          persist: true
+
+  ijo_benchmark_piecewise_lp:
+    cmd: >
+      python scripts/ijo1366_benchmark_piecewise_lp.py
+      --grid-n ${ijo_benchmark_piecewise.grid_n}
+      --tau ${ijo_benchmark_piecewise.tau}
+      --t-end ${ijo_benchmark_piecewise.t_end}
+      --bm0 ${ijo_benchmark_piecewise.bm0}
+      --glc0 ${ijo_benchmark_piecewise.glc0}
+      --condition ${ijo_data.condition}
+      --model-path ${ijo_data.model_path}
+      --lp-results results/ijo1366_benchmark_lp.npz
+      --data-path data/ijo1366_${ijo_data.condition}.npz
+      --output results/ijo1366_benchmark_piecewise_lp.npz
+    deps:
+      - scripts/ijo1366_benchmark_piecewise_lp.py
+      - results/ijo1366_benchmark_lp.npz
+      - data/ijo1366_${ijo_data.condition}.npz
+      - src/flux_config_ijo1366.py
+      - src/runtime_utils.py
+    params:
+      - ijo_benchmark_piecewise
+      - ijo_data.condition
+      - ijo_data.model_path
+    outs:
+      - results/ijo1366_benchmark_piecewise_lp.npz:
+          cache: false
+          persist: true
+
+  ijo_benchmark_piecewise_surrogate:
+    cmd: >
+      python scripts/ijo1366_benchmark_piecewise_surrogate.py
+      --grid-n ${ijo_benchmark_piecewise.grid_n}
+      --tau ${ijo_benchmark_piecewise.tau}
+      --t-end ${ijo_benchmark_piecewise.t_end}
+      --bm0 ${ijo_benchmark_piecewise.bm0}
+      --glc0 ${ijo_benchmark_piecewise.glc0}
+      --piecewise-lp-results results/ijo1366_benchmark_piecewise_lp.npz
+      --data-path data/ijo1366_${ijo_data.condition}.npz
+      --checkpoint trained_models/ijo1366_${ijo_data.condition}_hidden-${ijo_training.hidden_dim}.pt
+      --output results/ijo1366_benchmark_piecewise_surrogate.npz
+    deps:
+      - scripts/ijo1366_benchmark_piecewise_surrogate.py
+      - results/ijo1366_benchmark_piecewise_lp.npz
+      - data/ijo1366_${ijo_data.condition}.npz
+      - trained_models/ijo1366_${ijo_data.condition}_hidden-${ijo_training.hidden_dim}.pt
+      - src/flux_config_ijo1366.py
+      - src/runtime_utils.py
+      - src/surrogateNN.py
+    params:
+      - ijo_benchmark_piecewise
+      - ijo_data.condition
+      - ijo_training.hidden_dim
+    outs:
+      - results/ijo1366_benchmark_piecewise_surrogate.npz:
+          cache: false
+          persist: true
+
+    ijo_plot_piecewise_benchmark:
+    cmd: >
+      python scripts/ijo1366_plot_piecewise_benchmark.py
+      --lp-results results/ijo1366_benchmark_piecewise_lp.npz
+      --surrogate-results results/ijo1366_benchmark_piecewise_surrogate.npz
+      --outdir plots/ijo1366_piecewise_benchmark
+    deps:
+      - scripts/ijo1366_plot_piecewise_benchmark.py
+      - results/ijo1366_benchmark_piecewise_lp.npz
+      - results/ijo1366_benchmark_piecewise_surrogate.npz
+      - src/runtime_utils.py
+    outs:
+      - plots/ijo1366_piecewise_benchmark/:
+          cache: false
+          persist: true

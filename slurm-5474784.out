@@ -1,0 +1,3 @@
+Started at: Mon Jun 29 11:10:04 CEST 2026
+/home/jkaatz/MA/MLDynamicMetabolicControl/.venv/bin/python: error while loading shared libraries: libpython3.10.so.1.0: cannot open shared object file: No such file or directory
+Finished at: Mon Jun 29 11:10:04 CEST 2026

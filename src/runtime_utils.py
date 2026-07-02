@@ -42,9 +42,10 @@ def save_surrogate_checkpoint(model, x_scaler, y_scaler, metadata, path):
     payload = {
         "model_state": model.state_dict(),
         "model_hyperparams": {
-            "input_dim": getattr(model, "input_dim", None) or model.net[0].in_features,
+            "input_dim":  getattr(model, "input_dim",  None) or model.net[0].in_features,
             "hidden_dim": getattr(model, "hidden_dim", None) or model.net[0].out_features,
             "output_dim": getattr(model, "output_dim", None) or model.net[-1].out_features,
+            "n_layers":   getattr(model, "n_layers",   1),
         },
         "x_scaler": x_scaler,
         "y_scaler": y_scaler,
@@ -88,9 +89,10 @@ def load_surrogate_checkpoint(path, model_cls):
     payload = torch.load(path, map_location="cpu", weights_only=False)
     hyper = payload.get("model_hyperparams", {})
     model = model_cls(
-        input_dim=hyper.get("input_dim", 1),
+        input_dim=hyper.get("input_dim",  1),
         hidden_dim=hyper.get("hidden_dim", 5),
         output_dim=hyper.get("output_dim", 3),
+        n_layers=hyper.get("n_layers",    1),
     )
     model.load_state_dict(payload["model_state"])
     model.eval()
