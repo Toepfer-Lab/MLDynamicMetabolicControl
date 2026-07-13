@@ -47,8 +47,9 @@ FRACTION     = 0.5     # cooperative tradeoff fraction
 DT           = 0.1     # time step (hours)
 N_STEPS      = 80      # steps per trajectory = DT*N_STEPS hours total
 N_LANDSCAPE  = 200     # Dirichlet samples for the landscape sweep
-MIN_ABUND    = 1e-8    # floor to prevent numerical extinction
-SEED         = 42
+MIN_ABUND             = 1e-8    # floor to prevent numerical extinction
+SEED                  = 42
+CONVERGENCE_THRESHOLD = 0.99   # stop LP calls when dominant taxon exceeds this abundance
 
 
 def section(title):
@@ -103,6 +104,16 @@ n_taxa   = len(taxa_ids)
 print(f"  Taxa ({n_taxa}): {taxa_ids}")
 print(f"  Medium components accepted: {len(comm.medium)}")
 
+# Capture BEFORE any set_abundance call — it mutates comm.taxonomy in-place,
+# so reading after the landscape sweep would return the last Dirichlet sample.
+orig_abund = (comm.taxonomy
+              .set_index("id")["abundance"]
+              .reindex(taxa_ids).values.astype(float))
+orig_abund /= orig_abund.sum()
+print(f"  Original abundance from model taxonomy:")
+for t, v in zip(taxa_ids, orig_abund):
+    print(f"    {t:<6} {v:.6f}")
+
 
 # ── 2. Landscape sweep ────────────────────────────────────────────────────────
 section(f"2. Landscape sweep — {N_LANDSCAPE} Dirichlet samples")
@@ -152,17 +163,12 @@ print(f"\n  Saved: {RESULTS_DIR / 'mcsm_landscape.npz'}")
 section(f"3. Simulation — {N_STEPS} steps × dt={DT}h = {N_STEPS*DT:.1f}h total")
 
 # Starting conditions: original abundance + 4 Dirichlet draws
-orig_abund = (comm.taxonomy
-              .set_index("id")["abundance"]
-              .reindex(taxa_ids).values.astype(float))
-orig_abund /= orig_abund.sum()
-
 start_profiles = {
     "original"    : orig_abund,
-    "uniform"     : np.ones(n_taxa) / n_taxa,
     "dirichlet_a" : rng.dirichlet(np.ones(n_taxa)),
     "dirichlet_b" : rng.dirichlet(np.ones(n_taxa)),
     "dirichlet_c" : rng.dirichlet(np.ones(n_taxa)),
+    "dirichlet_d" : rng.dirichlet(np.ones(n_taxa)),
 }
 
 all_trajectories = {}   # name → (n_steps+1, n_taxa)
@@ -186,11 +192,29 @@ for name, x0 in start_profiles.items():
     x = x0.copy()
     t_sim = time.time()
 
+    last_mu = np.zeros(n_taxa)
+    last_gr = 0.0
     for step in range(N_STEPS):
+        if np.max(x) >= CONVERGENCE_THRESHOLD:
+            dominant = taxa_ids[np.argmax(x)]
+            print(f"    step {step+1:>3}  converged: dominant={dominant} "
+                  f"({x.max():.4f}) — filling remaining {N_STEPS - step} steps")
+            for rem in range(step, N_STEPS):
+                traj[rem + 1] = x
+                mu_traj[rem]  = last_mu
+                gr_traj[rem]  = last_gr
+            break
+
         mu, status, comm_gr, elapsed = solve(comm, x, taxa_ids, medium_dict)
         if status != "optimal":
-            print(f"    step {step}: status={status}, stopping early.")
-            break
+            print(f"    step {step+1:>3}  WARNING status={status} — "
+                  f"using last valid mu (dominant={taxa_ids[np.argmax(x)]} {x.max():.3f})")
+            mu      = last_mu.copy()
+            comm_gr = last_gr
+        else:
+            last_mu = mu.copy()
+            last_gr = comm_gr
+
         mu_traj[step] = mu
         gr_traj[step] = comm_gr
         x = euler_step(x, mu, DT)
@@ -198,7 +222,7 @@ for name, x0 in start_profiles.items():
 
         if (step + 1) % 10 == 0:
             dominant = taxa_ids[np.argmax(x)]
-            print(f"    step {step+1:>3}  t={( step+1)*DT:5.1f}h  "
+            print(f"    step {step+1:>3}  t={(step+1)*DT:5.1f}h  "
                   f"comm_gr={comm_gr:.4f}  dominant={dominant} ({x.max():.3f})")
 
     sim_elapsed = time.time() - t_sim

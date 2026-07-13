@@ -104,6 +104,7 @@ ax.set_title(f"Per-trajectory wall time\n({n_steps} steps × dt={dt}h = {n_steps
 ax.yaxis.set_major_formatter(mticker.FuncFormatter(
     lambda y, _: f"{y:.3f} s" if y < 1 else f"{y:.0f} s"
 ))
+ax.set_ylim(top=max(height) * 10)
 
 # speedup annotation
 ax.text(0.97, 0.97,
@@ -151,13 +152,7 @@ ax.yaxis.set_major_formatter(mticker.FuncFormatter(
                   else f"{y:.0f} s" if y < 3600
                   else f"{y/3600:.1f} h")
 ))
-
-# per-group speedup annotations
-for i, (lp_val, sur_val) in enumerate(zip(lp_heights, sur_heights)):
-    sp = lp_val / sur_val
-    ax.text(x_pos[i], max(lp_val, sur_val) * 4,
-            f"{sp:.0f}×", ha="center", va="bottom",
-            fontsize=11, fontweight="bold", color="black")
+ax.set_ylim(top=max(max(lp_heights), max(sur_heights)) * 10)
 
 fig.suptitle("LP solver vs Surrogate — wall time comparison", fontsize=13)
 

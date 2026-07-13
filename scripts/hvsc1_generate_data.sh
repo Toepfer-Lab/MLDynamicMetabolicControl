@@ -1,9 +1,9 @@
 #!/bin/bash -l
-#SBATCH --job-name=mcsm_gen_data
+#SBATCH --job-name=hvsc1_gen_data
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --mem=32gb
-#SBATCH --time=12:00:00
+#SBATCH --mem=48gb
+#SBATCH --time=48:00:00
 #SBATCH --account=ag-toepfer
 #SBATCH --output=/home/jkaatz/MA/MLDynamicMetabolicControl/results/slurm/%x-%j.out
 
@@ -14,14 +14,12 @@ module load math/CPLEX/22.1.1
 export PYTHONPATH=$PYTHONPATH:$CPLEX_HOME/python/3.10/x86-64_linux
 
 VENV=/home/jkaatz/MA/MLDynamicMetabolicControl/.venv
-SCRIPT=/home/jkaatz/MA/MLDynamicMetabolicControl/scripts/mcsm_generate_data.py
+SCRIPT=/home/jkaatz/MA/MLDynamicMetabolicControl/scripts/hvsc1_generate_data.py
 
 echo "Started at: $(date)"
 $VENV/bin/python $SCRIPT \
-    --n-samples 5000 \
+    --n-samples 20000 \
     --fraction 0.5 \
-    --gln-exchange EX_gln__L_m \
-    --model-path /home/jkaatz/MA/MLDynamicMetabolicControl/model/dcom.pickle \
-    --medium-path /home/jkaatz/MA/MLDynamicMetabolicControl/data/Completed_maize_leaf_medium.csv \
-    --output /home/jkaatz/MA/MLDynamicMetabolicControl/data/mcsm_training.npz
+    --model-path /home/jkaatz/MA/MLDynamicMetabolicControl/model/hvsc1_comm.pickle \
+    --output /home/jkaatz/MA/MLDynamicMetabolicControl/data/hvsc1_training.npz
 echo "Finished at: $(date)"

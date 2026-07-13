@@ -3,6 +3,7 @@
 mcsm_data:
   n_samples: 5000
   fraction: 0.5
+  gln_exchange: EX_gln__L_m
   model_path: model/dcom.pickle
   medium_path: data/Completed_maize_leaf_medium.csv
   output: data/mcsm_training.npz

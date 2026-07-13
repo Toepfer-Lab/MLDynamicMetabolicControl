@@ -1,5 +1,5 @@
 #!/bin/bash -l
-#SBATCH --job-name=mcsm_gen_data
+#SBATCH --job-name=hvsc1_simulate
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --mem=32gb
@@ -14,14 +14,16 @@ module load math/CPLEX/22.1.1
 export PYTHONPATH=$PYTHONPATH:$CPLEX_HOME/python/3.10/x86-64_linux
 
 VENV=/home/jkaatz/MA/MLDynamicMetabolicControl/.venv
-SCRIPT=/home/jkaatz/MA/MLDynamicMetabolicControl/scripts/mcsm_generate_data.py
+SCRIPT=/home/jkaatz/MA/MLDynamicMetabolicControl/scripts/hvsc1_simulate.py
 
 echo "Started at: $(date)"
 $VENV/bin/python $SCRIPT \
-    --n-samples 5000 \
+    --model-path /home/jkaatz/MA/MLDynamicMetabolicControl/model/hvsc1_comm.pickle \
+    --output-landscape /home/jkaatz/MA/MLDynamicMetabolicControl/results/hvsc1_landscape.npz \
+    --output-trajectories /home/jkaatz/MA/MLDynamicMetabolicControl/results/hvsc1_trajectories.npz \
+    --n-landscape 200 \
+    --n-steps 80 \
+    --dt 0.1 \
     --fraction 0.5 \
-    --gln-exchange EX_gln__L_m \
-    --model-path /home/jkaatz/MA/MLDynamicMetabolicControl/model/dcom.pickle \
-    --medium-path /home/jkaatz/MA/MLDynamicMetabolicControl/data/Completed_maize_leaf_medium.csv \
-    --output /home/jkaatz/MA/MLDynamicMetabolicControl/data/mcsm_training.npz
+    --convergence-threshold 0.99
 echo "Finished at: $(date)"

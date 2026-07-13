@@ -1,0 +1,119 @@
+# All paths below are relative to this file's directory (hvsc1/).
+# Commands run with cwd=hvsc1/, so "../" resolves to the repo root.
+
+stages:
+
+  hvsc1_generate_data:
+    cmd: >
+      python ../scripts/hvsc1_generate_data.py
+      --n-samples ${hvsc1_data.n_samples}
+      --fraction ${hvsc1_data.fraction}
+      --model-path ../${hvsc1_data.model_path}
+      --output ../${hvsc1_data.output}
+    deps:
+      - ../scripts/hvsc1_generate_data.py
+      - ../model/hvsc1_comm.pickle
+    params:
+      - params.yaml:
+          - hvsc1_data.n_samples
+          - hvsc1_data.fraction
+          - hvsc1_data.model_path
+          - hvsc1_data.output
+    outs:
+      - ../data/hvsc1_training.npz:
+          cache: false
+          persist: true
+
+  hvsc1_train_surrogate:
+    cmd: >
+      python ../scripts/train_surrogate.py
+      --vman hvsc1
+      --condition community
+      --data-path ../${hvsc1_data.output}
+      --hidden-dim ${hvsc1_training.hidden_dim}
+      --n-layers ${hvsc1_training.n_layers}
+      --epochs ${hvsc1_training.epochs}
+      --patience ${hvsc1_training.patience}
+      --lr ${hvsc1_training.lr}
+      --model-name hvsc1_community_input-27_output-27_hidden-${hvsc1_training.hidden_dim}
+    deps:
+      - ../scripts/train_surrogate.py
+      - ../src/surrogateNN.py
+      - ../src/runtime_utils.py
+      - ../data/hvsc1_training.npz
+    params:
+      - params.yaml:
+          - hvsc1_training.hidden_dim
+          - hvsc1_training.n_layers
+          - hvsc1_training.epochs
+          - hvsc1_training.patience
+          - hvsc1_training.lr
+    outs:
+      - ../trained_models/hvsc1_community_input-27_output-27_hidden-${hvsc1_training.hidden_dim}.pt:
+          cache: false
+          persist: true
+      - ../trained_models/hvsc1_community_input-27_output-27_hidden-${hvsc1_training.hidden_dim}_metrics.json:
+          cache: false
+          persist: true
+
+  hvsc1_simulate_lp:
+    # Cluster job — run manually via sbatch scripts/hvsc1_simulate.sh
+    cmd: >
+      python ../scripts/hvsc1_simulate.py
+      --model-path ../${hvsc1_data.model_path}
+      --output-landscape ../results/hvsc1_landscape.npz
+      --output-trajectories ../results/hvsc1_trajectories.npz
+      --n-landscape ${hvsc1_simulate_lp.n_landscape}
+      --n-steps ${hvsc1_simulate_lp.n_steps}
+      --dt ${hvsc1_simulate_lp.dt}
+      --fraction ${hvsc1_simulate_lp.fraction}
+      --convergence-threshold ${hvsc1_simulate_lp.convergence_threshold}
+    deps:
+      - ../scripts/hvsc1_simulate.py
+      - ../model/hvsc1_comm.pickle
+    params:
+      - params.yaml:
+          - hvsc1_simulate_lp.n_landscape
+          - hvsc1_simulate_lp.n_steps
+          - hvsc1_simulate_lp.dt
+          - hvsc1_simulate_lp.fraction
+          - hvsc1_simulate_lp.convergence_threshold
+    outs:
+      - ../results/hvsc1_trajectories.npz:
+          cache: false
+          persist: true
+      - ../results/hvsc1_landscape.npz:
+          cache: false
+          persist: true
+
+  hvsc1_simulate_surrogate:
+    cmd: >
+      python ../scripts/hvsc1_ode_surrogate.py
+      --checkpoint ../trained_models/hvsc1_community_input-27_output-27_hidden-${hvsc1_training.hidden_dim}.pt
+      --lp-trajectories ../results/hvsc1_trajectories.npz
+      --output ../results/hvsc1_surrogate_trajectories.npz
+      --n-steps ${hvsc1_simulate_surrogate.n_steps}
+      --dt ${hvsc1_simulate_surrogate.dt}
+    deps:
+      - ../scripts/hvsc1_ode_surrogate.py
+      - ../trained_models/hvsc1_community_input-27_output-27_hidden-${hvsc1_training.hidden_dim}.pt
+      - ../results/hvsc1_trajectories.npz
+    params:
+      - params.yaml:
+          - hvsc1_simulate_surrogate.n_steps
+          - hvsc1_simulate_surrogate.dt
+    outs:
+      - ../results/hvsc1_surrogate_trajectories.npz:
+          cache: false
+          persist: true
+
+  hvsc1_plot:
+    cmd: python ../scripts/hvsc1_plot_trajectories.py
+    deps:
+      - ../scripts/hvsc1_plot_trajectories.py
+      - ../results/hvsc1_trajectories.npz
+      - ../results/hvsc1_landscape.npz
+    outs:
+      - ../plots/hvsc1/:
+          cache: false
+          persist: true
