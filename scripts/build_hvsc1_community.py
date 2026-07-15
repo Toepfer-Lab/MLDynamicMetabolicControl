@@ -69,7 +69,11 @@ def main():
     syncom_df = taxonomy[taxonomy["Syncom"].isin(all_syncoms)].copy()
     print(f"  Taxonomy rows with Syncom in {all_syncoms}: {len(syncom_df)}")
 
-    model_files = {f.stem[:-3]: f for f in args.model_dir.glob("*_ex.xml")}
+    # Strain ID is the filename prefix before the first underscore, e.g.
+    # "100_or_mb1_mdr_rdr_dp_mb2_lib_bz_fix.xml" -> "100". Colleague's
+    # corrected model delivery (2026-07-14) uses this naming scheme,
+    # replacing the original "{id}_ex.xml" convention.
+    model_files = {f.stem.split("_")[0]: f for f in args.model_dir.glob("*.xml")}
     print(f"  Model files found in {args.model_dir}: {len(model_files)}")
 
     csv_ids = set(syncom_df["Strain ID"])
