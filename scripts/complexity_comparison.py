@@ -2,24 +2,28 @@
 Cross-scale comparison: surrogate speedup grows with model complexity.
 
 Consolidates existing (and newly produced, see ecc2comp_benchmark_lp/surrogate.py)
-LP-vs-surrogate benchmark results across three model scales — ECC2comp (~120
-reactions), iJO1366 (2583 reactions), and the mcsm 6-taxon MICOM community
-(~16,400 reactions) — into one table and one log-scale figure. This is the
+LP-vs-surrogate benchmark results across four model scales — ECC2comp (~120
+reactions), iJO1366 (2583 reactions), the mcsm 6-taxon MICOM community
+(~16,400 reactions), and the hvsc1 27-taxon MICOM community (~70,800
+reactions) — into one table and one log-scale figure. This is the
 quantitative backbone for the thesis's core claim: the surrogate's absolute
 benefit over a real LP solve grows with the complexity of the underlying
-model, culminating in the MICOM community case.
+model, culminating in the largest MICOM community case.
 
-hvsc1 (27-strain community) is intentionally excluded: the built model
-(8,257 reactions) is smaller than the mcsm 6-taxon community despite having
-more than 4x the taxa, which was itself part of the evidence that the
-underlying model was built incorrectly (colleague is fixing it). Including
-it here would misrepresent the complexity axis rather than support it — see
-results/hvsc1_model_size.json / scripts/hvsc1_model_size.py for that data,
-kept for whenever a corrected model is ready to revisit.
+hvsc1 was excluded for most of this project (see git history / calculations_log.md
+2026-07-14 "hvsc1 removed from the comparison"): the originally-built model had
+only 8,257 reactions -- smaller than the mcsm 6-taxon community despite having
+more than 4x the taxa, which was itself part of the evidence that the model was
+built incorrectly. A colleague delivered corrected source data, the community
+was rebuilt (70,775 reactions / 46,476 metabolites, results/hvsc1_model_size.json),
+the surrogate was retrained on a corner-bias-corrected dataset after a separate
+diagnosis (calculations_log.md 2026-07-15/2026-07-16), and scripts/hvsc1_benchmark.py
+(mirroring mcsm_benchmark.py) now provides the matched-call-count timing hvsc1
+was missing. It is included here as the fourth and largest-scale point.
 
-Methodology varies across the three scales included here (matched-call-count
-benchmark throughout, but ECC2comp/iJO1366 are grid sweeps while mcsm is a
-real 5-trajectory/80-step comparison) — the methodology column in the output
+Methodology varies across the four scales included here (matched-call-count
+benchmark throughout, but ECC2comp/iJO1366 are grid sweeps while mcsm/hvsc1 are
+real 5-trajectory/80-step comparisons) — the methodology column in the output
 table is not decorative, it is the whole point of being honest about what is
 and isn't a like-for-like number.
 
@@ -84,8 +88,20 @@ print(f"  Real (LP)  per call : {mcsm_real_per_call*1000:.4f} ms")
 print(f"  Surrogate  per call : {mcsm_sur_per_call*1000:.4f} ms")
 print(f"  Speedup             : {mcsm_speedup:,.1f}x")
 
-# ── 4. mcsm basin-sensitivity capstone (reconciled, callout not a table row) ──
-section("4. mcsm basin-sensitivity capstone (reconciled)")
+# ── 4. hvsc1 (27-taxon, real matched 5-trajectory/80-step comparison) ─────────
+section("4. hvsc1 27-taxon community (matched 5-trajectory/80-step, per-call)")
+hvsc1 = np.load(RESULTS / "hvsc1_benchmark.npz")
+
+hvsc1_n_steps = int(hvsc1["n_steps"])
+hvsc1_real_per_call = float(hvsc1["lp_step_times"].mean())
+hvsc1_sur_per_call = float(hvsc1["sur_traj_times_matched"].mean() / hvsc1_n_steps)
+hvsc1_speedup = hvsc1_real_per_call / hvsc1_sur_per_call
+print(f"  Real (LP)  per call : {hvsc1_real_per_call*1000:.4f} ms")
+print(f"  Surrogate  per call : {hvsc1_sur_per_call*1000:.4f} ms")
+print(f"  Speedup             : {hvsc1_speedup:,.1f}x")
+
+# ── 5. mcsm basin-sensitivity capstone (reconciled, callout not a table row) ──
+section("5. mcsm basin-sensitivity capstone (reconciled)")
 capstone = np.load(RESULTS / "mcsm_basin_sensitivity_reconciled.npz")
 print(f"  n_lp_solves      : {int(capstone['n_lp_solves']):,}")
 print(f"  Surrogate time   : {float(capstone['surrogate_time_s'])/60:.1f} min")
@@ -94,7 +110,7 @@ print(f"  LP-estimate time : {float(capstone['lp_time_est_s'])/86400/365.25:.2f}
 print(f"  Speedup          : {float(capstone['speedup']):,.0f}x")
 
 # ── Assemble table ─────────────────────────────────────────────────────────────
-section("5. Assembling comparison table")
+section("6. Assembling comparison table")
 
 rows = [
     dict(model="ECC2comp", n_rxn=122, n_met=94,
@@ -112,6 +128,13 @@ rows = [
          speedup=mcsm_speedup,
          methodology="Matched call-count (5 real trajectories x 80 steps, "
                      "real cooperative_tradeoff vs. surrogate, both measured)"),
+    dict(model="hvsc1 (27-taxon)", n_rxn=70775, n_met=46476,
+         real_ms=hvsc1_real_per_call * 1000, sur_ms=hvsc1_sur_per_call * 1000,
+         speedup=hvsc1_speedup,
+         methodology="Matched call-count (5 real trajectories x 80 steps, "
+                     "real cooperative_tradeoff vs. surrogate, both measured; "
+                     "surrogate retrained on corner-bias-corrected data, see "
+                     "calculations_log.md 2026-07-16)"),
 ]
 
 csv_path = RESULTS / "complexity_comparison.csv"
@@ -140,7 +163,7 @@ with open(md_path, "w") as f:
 print(f"  Saved: {md_path}")
 
 # ── Figure ──────────────────────────────────────────────────────────────────────
-section("6. Plotting")
+section("7. Plotting")
 
 x = np.array([r["n_rxn"] for r in rows])
 y_real = np.array([r["real_ms"] / 1000 for r in rows])   # back to seconds
@@ -163,7 +186,7 @@ ax.yaxis.set_major_formatter(mticker.FuncFormatter(
     lambda v, _: f"{v*1000:.2f} ms" if v < 1 else f"{v:.1f} s"
 ))
 ax.set_title("Surrogate speedup grows with model complexity\n"
-             "(ECC2comp -> iJO1366 -> MICOM community)",
+             "(ECC2comp -> iJO1366 -> mcsm -> hvsc1 MICOM communities)",
              fontsize=11)
 ax.legend(fontsize=10, loc="upper left")
 ax.grid(True, which="both", alpha=0.2)

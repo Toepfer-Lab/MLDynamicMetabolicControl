@@ -2,7 +2,7 @@
 # All paths are relative to the repo root (not this file's directory).
 
 hvsc1_data:
-  n_samples: 28000
+  n_samples: 91978  # 28000 naive (original) + 63978 corner-biased topup (mixture mode); see calculations_log.md
   fraction: 0.5
   model_path: model/hvsc1_comm.pickle
   output: data/hvsc1_training.npz
