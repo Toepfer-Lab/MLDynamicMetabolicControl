@@ -163,6 +163,7 @@ def main():
         "dirichlet_b" : rng.dirichlet(np.ones(n_taxa)),
         "dirichlet_c" : rng.dirichlet(np.ones(n_taxa)),
         "dirichlet_d" : rng.dirichlet(np.ones(n_taxa)),
+        "dirichlet_e" : rng.dirichlet(np.ones(n_taxa)),
     }
 
     all_trajectories = {}

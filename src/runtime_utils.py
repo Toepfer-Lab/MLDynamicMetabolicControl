@@ -99,3 +99,30 @@ def load_surrogate_checkpoint(path, model_cls):
     metadata = payload.get("metadata", {})
     return model, payload["x_scaler"], payload["y_scaler"], metadata
 
+
+def ensemble_predict(members, X, reduce=True):
+    """
+    Run surrogate inference across an ensemble of independently-trained
+    checkpoints and average their predictions (a "deep ensemble").
+
+    Parameters
+    ----------
+    members : list of (model_nn, x_scaler, y_scaler, metadata)
+        As returned by load_surrogate_checkpoint, one entry per ensemble member.
+    X : array-like, shape (n, n_inputs) or (n_inputs,)
+    reduce : bool
+        If True (default), return the mean prediction across members,
+        shape (n, n_outputs). If False, return the raw per-member stack,
+        shape (n_members, n, n_outputs) -- e.g. to compute prediction
+        variance for active-learning candidate scoring.
+
+    Returns
+    -------
+    np.ndarray, shape (n, n_outputs) if reduce else (n_members, n, n_outputs)
+    """
+    preds = np.stack([
+        surrogate_predict(model_nn, x_scaler, y_scaler, X)
+        for model_nn, x_scaler, y_scaler, _ in members
+    ], axis=0)
+    return preds.mean(axis=0) if reduce else preds
+
