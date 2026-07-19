@@ -18,14 +18,24 @@ Buckets by max-abundance using the SAME BUCKETS/MAE/R2 logic as
 hvsc1_eval_stratified.py (duplicated here intentionally, not imported --
 this script must never write/merge into the IID-split evaluation path).
 
+When --ensemble-dir is given, also runs a committee-diagnostic check: since
+reserved_corner_test has true LP-solved Y and no ensemble member has ever
+trained on it, we can directly test whether the ensemble's per-point
+prediction VARIANCE (the same score hvsc1_al_generate_pool.py uses to rank
+unlabeled candidates) actually correlates with real prediction ERROR here.
+If it doesn't, the committee has converged to near-identical functions and
+variance-based active-learning selection would be picking arbitrary points,
+not genuinely hard ones -- worth knowing before spending any LP budget on
+Stage B's candidate batch.
+
 STANDING INVARIANT: never pass data/hvsc1_shards/reserved_corner_test/ to
 scripts/hvsc1_merge_shards.py --shard-dir, at any round -- doing so would
 destroy the only clean corner-aware held-out set in the repo.
 
 Usage:
     python scripts/hvsc1_eval_reserved_corner.py
-    python scripts/hvsc1_eval_reserved_corner.py \\
-        --checkpoint trained_models/hvsc1_community_input-27_output-27_hidden-128.pt \\
+    python scripts/hvsc1_eval_reserved_corner.py \
+        --checkpoint trained_models/hvsc1_community_input-27_output-27_hidden-128.pt \
         --ensemble-dir trained_models/hvsc1_al_ensemble/round01
 """
 
@@ -35,6 +45,7 @@ import sys
 from pathlib import Path
 
 import numpy as np
+from scipy.stats import spearmanr
 from sklearn.metrics import r2_score
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -47,6 +58,7 @@ from surrogateNN import SurrogateNN  # noqa: E402
 
 BUCKETS = [(0.0, 0.3), (0.3, 0.5), (0.5, 0.7), (0.7, 0.9), (0.9, 1.0)]
 MIN_N_FOR_R2 = 30
+N_VARIANCE_QUANTILES = 4
 
 
 def section(title):
@@ -62,7 +74,8 @@ def parse_args():
                    help="Single production checkpoint to evaluate")
     p.add_argument("--ensemble-dir", type=Path, default=None,
                    help="If set, also evaluate the deep-ensemble average of member*.pt "
-                        "checkpoints in this directory, side by side with --checkpoint")
+                        "checkpoints in this directory, side by side with --checkpoint, "
+                        "and run the variance-vs-error committee diagnostic")
     p.add_argument("--reserved-dir", type=Path,
                    default=REPO_ROOT / "data" / "hvsc1_shards" / "reserved_corner_test",
                    help="Held-out shard directory -- never pass this to hvsc1_merge_shards.py")
@@ -112,6 +125,58 @@ def bucket_metrics(Y_pred, Y_true, max_abundance, label):
             "n_total": int(len(max_abundance))}
 
 
+def committee_diagnostic(members, X, Y):
+    """Test whether ensemble prediction VARIANCE (the same score
+    hvsc1_al_generate_pool.py uses to rank unlabeled candidates) actually
+    correlates with real prediction ERROR on this held-out, ground-truth set.
+
+    Returns (report_dict, score, error) where score/error are per-point
+    arrays (for callers that want to plot/inspect further).
+    """
+    raw = ensemble_predict(members, X, reduce=False)          # (n_members, N, 27)
+    Y_pred_ens = raw.mean(axis=0)                              # (N, 27)
+    score = raw.var(axis=0).mean(axis=1)                       # (N,) -- same formula as the pool scorer
+    error = np.mean(np.abs(Y_pred_ens - Y), axis=1)            # (N,) per-point MAE
+
+    rho, pval = spearmanr(score, error)
+
+    edges = np.quantile(score, np.linspace(0, 1, N_VARIANCE_QUANTILES + 1))
+    quantile_idx = np.clip(np.digitize(score, edges[1:-1]), 0, N_VARIANCE_QUANTILES - 1)
+
+    print(f"\n  --- Committee diagnostic: variance vs. actual error ---")
+    print(f"  Spearman rho(variance, error) = {rho:.4f}  (p={pval:.2e})")
+    print(f"  {'Quantile':<12}{'n':>6}  {'score range':>24}  {'mean |error|':>14}")
+    print(f"  {'-'*58}")
+    quantiles_out = []
+    for q in range(N_VARIANCE_QUANTILES):
+        mask = quantile_idx == q
+        n = int(mask.sum())
+        mean_err = float(error[mask].mean()) if n else None
+        lo_s, hi_s = edges[q], edges[q + 1]
+        label = f"Q{q+1}{' (lowest var)' if q == 0 else ''}{' (highest var)' if q == N_VARIANCE_QUANTILES - 1 else ''}"
+        mean_err_str = f"{mean_err:.4f}" if mean_err is not None else "--"
+        print(f"  {label:<12}{n:>6}  [{lo_s:.2e},{hi_s:.2e}]{'':>3}  {mean_err_str:>14}")
+        quantiles_out.append({"quantile": q + 1, "n": n, "score_lo": float(lo_s),
+                              "score_hi": float(hi_s), "mean_abs_error": mean_err})
+    print(f"  {'-'*58}")
+
+    ratio = None
+    if quantiles_out[0]["mean_abs_error"] and quantiles_out[-1]["mean_abs_error"]:
+        ratio = quantiles_out[-1]["mean_abs_error"] / quantiles_out[0]["mean_abs_error"]
+        print(f"  Highest-variance / lowest-variance quantile error ratio: {ratio:.2f}x")
+        if ratio > 1.5 or rho > 0.3:
+            print("  -> Variance tracks real error here: committee disagreement looks like "
+                  "a genuine difficulty signal. Safe to trust pool-selection on unlabeled candidates.")
+        else:
+            print("  -> Variance does NOT clearly track real error here: possible low-diversity "
+                  "committee. Consider architecture variation or smaller per-member bootstrap "
+                  "fraction before spending LP budget on the pool's top-N picks.")
+
+    return ({"spearman_rho": float(rho), "spearman_pvalue": float(pval),
+            "quantiles": quantiles_out, "high_low_ratio": ratio},
+           score, error)
+
+
 def main():
     args = parse_args()
 
@@ -145,6 +210,10 @@ def main():
                                          f"deep ensemble ({len(members)} members)")
             output_payload["ensemble_dir"] = str(args.ensemble_dir)
             output_payload["ensemble"] = ens_metrics
+
+            section("4. Committee diagnostic (variance vs. actual error)")
+            diag_report, _, _ = committee_diagnostic(members, X, Y)
+            output_payload["committee_diagnostic"] = diag_report
 
     if args.output is not None:
         args.output.parent.mkdir(parents=True, exist_ok=True)

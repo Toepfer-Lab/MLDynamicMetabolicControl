@@ -3,13 +3,17 @@ Visualise LP vs surrogate benchmark results from hvsc1_benchmark.npz.
 Mirrors scripts/mcsm_plot_benchmark.py exactly (same figure layout/formatting)
 so the two are directly comparable.
 
-Produces plots/hvsc1/benchmark_walltime.png:
+Produces <plots-dir>/benchmark_walltime.png (default plots/hvsc1/, but pass
+--plots-dir plots/hvsc1_al_N to save into a round-tagged directory instead --
+same convention already used by hvsc1_plot_trajectories.py/hvsc1_full_phase_portrait.py
+-- so re-runs against a new round's checkpoint don't clobber an earlier round's plot):
   Two-panel figure showing wall time comparison on a log scale.
   Panel 1 — per-trajectory wall time (LP measured vs Surrogate measured)
   Panel 2 — total wall time for N_LP and N_SUR trajectory batches
              (LP extrapolated from per-trajectory average; surrogate measured)
 """
 
+import argparse
 from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
@@ -17,10 +21,23 @@ import matplotlib.ticker as mticker
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 RESULTS   = REPO_ROOT / "results"
-PLOTS     = REPO_ROOT / "plots" / "hvsc1"
+
+parser = argparse.ArgumentParser(description=__doc__,
+                                 formatter_class=argparse.RawDescriptionHelpFormatter)
+parser.add_argument("--benchmark-npz", type=Path, default=RESULTS / "hvsc1_benchmark.npz",
+                    help="Path to the hvsc1_benchmark.py output to visualize")
+parser.add_argument("--plots-dir", type=Path, default=REPO_ROOT / "plots" / "hvsc1",
+                    help="Output directory (default plots/hvsc1; pass plots/hvsc1_al_N "
+                         "for a round-tagged directory)")
+parser.add_argument("--label", type=str, default=None,
+                    help="Short label (e.g. 'AL Round 2 (384x3)') folded into the figure "
+                         "suptitle so the PNG is self-describing outside its directory context")
+args = parser.parse_args()
+
+PLOTS = args.plots_dir
 PLOTS.mkdir(parents=True, exist_ok=True)
 
-data = np.load(RESULTS / "hvsc1_benchmark.npz", allow_pickle=True)
+data = np.load(args.benchmark_npz, allow_pickle=True)
 
 # ── unpack ────────────────────────────────────────────────────────────────────
 n_lp    = int(data["n_lp"])
@@ -156,7 +173,10 @@ ax.yaxis.set_major_formatter(mticker.FuncFormatter(
 ))
 ax.set_ylim(top=max(max(lp_heights), max(sur_heights)) * 10)
 
-fig.suptitle("LP solver vs Surrogate — wall time comparison (hvsc1, 27-taxon community)", fontsize=13)
+title = "LP solver vs Surrogate — wall time comparison (hvsc1, 27-taxon community)"
+if args.label:
+    title += f"\n{args.label}"
+fig.suptitle(title, fontsize=13)
 
 path = PLOTS / "benchmark_walltime.png"
 fig.savefig(path, dpi=150, bbox_inches="tight", pad_inches=0.3)

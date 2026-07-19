@@ -27,12 +27,17 @@ real 5-trajectory/80-step comparisons) — the methodology column in the output
 table is not decorative, it is the whole point of being honest about what is
 and isn't a like-for-like number.
 
-Outputs:
-  results/complexity_comparison.csv
-  results/complexity_comparison.md
-  plots/complexity_comparison/speedup_vs_complexity.png
+Outputs (untagged by default; pass --tag to write a suffixed, non-clobbering set
+instead -- e.g. --tag al_round02 -> complexity_comparison_al_round02.{csv,md} and
+speedup_vs_complexity_al_round02.png. This is a cross-model, cross-round comparison
+chart, not itself "one round's" plot, so it uses filename-tag suffixing rather than
+the per-round directory convention used by the hvsc1-only diagnostic plots):
+  results/complexity_comparison[_TAG].csv
+  results/complexity_comparison[_TAG].md
+  plots/complexity_comparison/speedup_vs_complexity[_TAG].png
 """
 
+import argparse
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -43,6 +48,19 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 RESULTS = REPO_ROOT / "results"
 PLOTS = REPO_ROOT / "plots" / "complexity_comparison"
 PLOTS.mkdir(parents=True, exist_ok=True)
+
+parser = argparse.ArgumentParser(description=__doc__,
+                                 formatter_class=argparse.RawDescriptionHelpFormatter)
+parser.add_argument("--hvsc1-benchmark-npz", type=Path, default=RESULTS / "hvsc1_benchmark.npz",
+                    help="Path to the hvsc1_benchmark.py output to use for the hvsc1 row")
+parser.add_argument("--tag", type=str, default=None,
+                    help="If set, suffixes all three output filenames (csv/md/png) instead "
+                         "of overwriting the untagged ones -- use per round/checkpoint state")
+parser.add_argument("--hvsc1-label", type=str, default="hvsc1 (27-taxon)",
+                    help="Label for the hvsc1 row/point, folded into the table's model "
+                         "column and the plot annotation so it's clear which checkpoint/round "
+                         "this reflects (e.g. 'hvsc1 (27-taxon, AL round02, 384x3)')")
+args = parser.parse_args()
 
 C_LP = "#E07B54"   # warm orange
 C_SUR = "#5B8DB8"  # steel blue
@@ -90,7 +108,8 @@ print(f"  Speedup             : {mcsm_speedup:,.1f}x")
 
 # ── 4. hvsc1 (27-taxon, real matched 5-trajectory/80-step comparison) ─────────
 section("4. hvsc1 27-taxon community (matched 5-trajectory/80-step, per-call)")
-hvsc1 = np.load(RESULTS / "hvsc1_benchmark.npz")
+print(f"  Reading: {args.hvsc1_benchmark_npz}")
+hvsc1 = np.load(args.hvsc1_benchmark_npz, allow_pickle=True)
 
 hvsc1_n_steps = int(hvsc1["n_steps"])
 hvsc1_real_per_call = float(hvsc1["lp_step_times"].mean())
@@ -128,16 +147,16 @@ rows = [
          speedup=mcsm_speedup,
          methodology="Matched call-count (5 real trajectories x 80 steps, "
                      "real cooperative_tradeoff vs. surrogate, both measured)"),
-    dict(model="hvsc1 (27-taxon)", n_rxn=70775, n_met=46476,
+    dict(model=args.hvsc1_label, n_rxn=70775, n_met=46476,
          real_ms=hvsc1_real_per_call * 1000, sur_ms=hvsc1_sur_per_call * 1000,
          speedup=hvsc1_speedup,
          methodology="Matched call-count (5 real trajectories x 80 steps, "
-                     "real cooperative_tradeoff vs. surrogate, both measured; "
-                     "surrogate retrained on corner-bias-corrected data, see "
-                     "calculations_log.md 2026-07-16)"),
+                     "real cooperative_tradeoff vs. surrogate, both measured); "
+                     f"benchmark data: {args.hvsc1_benchmark_npz.name}"),
 ]
 
-csv_path = RESULTS / "complexity_comparison.csv"
+suffix = "" if args.tag is None else f"_{args.tag}"
+csv_path = RESULTS / f"complexity_comparison{suffix}.csv"
 with open(csv_path, "w") as f:
     f.write("model,n_reactions,n_metabolites,real_ms_per_call,surrogate_ms_per_call,speedup,methodology\n")
     for r in rows:
@@ -145,7 +164,7 @@ with open(csv_path, "w") as f:
                 f'{r["sur_ms"]:.5f},{r["speedup"]:.1f},"{r["methodology"]}"\n')
 print(f"  Saved: {csv_path}")
 
-md_path = RESULTS / "complexity_comparison.md"
+md_path = RESULTS / f"complexity_comparison{suffix}.md"
 with open(md_path, "w") as f:
     f.write("# Surrogate speedup vs. model complexity\n\n")
     f.write("| Model | #Reactions | #Metabolites | Real (ms/call) | Surrogate (ms/call) | Speedup | Methodology |\n")
@@ -186,12 +205,12 @@ ax.yaxis.set_major_formatter(mticker.FuncFormatter(
     lambda v, _: f"{v*1000:.2f} ms" if v < 1 else f"{v:.1f} s"
 ))
 ax.set_title("Surrogate speedup grows with model complexity\n"
-             "(ECC2comp -> iJO1366 -> mcsm -> hvsc1 MICOM communities)",
+             f"(ECC2comp -> iJO1366 -> mcsm -> {args.hvsc1_label})",
              fontsize=11)
 ax.legend(fontsize=10, loc="upper left")
 ax.grid(True, which="both", alpha=0.2)
 
-fig_path = PLOTS / "speedup_vs_complexity.png"
+fig_path = PLOTS / f"speedup_vs_complexity{suffix}.png"
 fig.savefig(fig_path, dpi=150, bbox_inches="tight", pad_inches=0.2)
 plt.close(fig)
 print(f"  Saved: {fig_path}")

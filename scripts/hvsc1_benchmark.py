@@ -9,12 +9,15 @@ Runs N_LP trajectories with the LP solver and the same N_LP starting
 conditions through the surrogate. Additionally runs a larger surrogate-only
 batch (N_SUR trajectories) to represent a realistic large-scale use case.
 
-Results saved to results/hvsc1_benchmark.npz.
+Results saved to results/hvsc1_benchmark.npz (or results/hvsc1_benchmark_{tag}.npz
+if --tag is given -- use this whenever the production checkpoint has moved on to a
+new round, so a re-run doesn't silently clobber an earlier round's numbers).
 
 The LP section requires CPLEX -- run this script via sbatch
 (scripts/hvsc1_benchmark.sh).
 """
 
+import argparse
 import sys
 import time
 from pathlib import Path
@@ -36,9 +39,19 @@ cobra.Configuration.solver = "cplex"
 
 # ── parameters ────────────────────────────────────────────────────────────────
 MODEL_PATH  = REPO_ROOT / "model" / "hvsc1_comm.pickle"
-CHECKPOINT  = REPO_ROOT / "trained_models" / "hvsc1_community_input-27_output-27_hidden-128.pt"
+DEFAULT_CHECKPOINT = REPO_ROOT / "trained_models" / "hvsc1_community_input-27_output-27_hidden-128.pt"
 RESULTS_DIR = REPO_ROOT / "results"
 RESULTS_DIR.mkdir(exist_ok=True)
+
+parser = argparse.ArgumentParser(description=__doc__,
+                                 formatter_class=argparse.RawDescriptionHelpFormatter)
+parser.add_argument("--checkpoint", type=Path, default=DEFAULT_CHECKPOINT,
+                    help="Surrogate checkpoint to benchmark (default: current canonical production checkpoint)")
+parser.add_argument("--tag", type=str, default=None,
+                    help="If set, output -> results/hvsc1_benchmark_{tag}.npz instead of "
+                         "results/hvsc1_benchmark.npz -- use per round so re-runs don't clobber history")
+args = parser.parse_args()
+CHECKPOINT = args.checkpoint
 
 N_LP     = 5     # LP trajectories to run (representative sample)
 N_SUR    = 100   # surrogate-only trajectories (realistic large-scale batch)
@@ -197,7 +210,8 @@ print(f"  Measured surrogate time for {N_SUR} trajectories: {sur_batch_total:.2f
 
 # ── 7. Save ───────────────────────────────────────────────────────────────────
 section("7. Saving benchmark results")
-out_path = RESULTS_DIR / "hvsc1_benchmark.npz"
+out_name = "hvsc1_benchmark.npz" if args.tag is None else f"hvsc1_benchmark_{args.tag}.npz"
+out_path = RESULTS_DIR / out_name
 np.savez_compressed(
     out_path,
     # LP
@@ -217,5 +231,8 @@ np.savez_compressed(
     seed    = SEED,
     # taxa
     taxa_ids = taxa_ids,
+    # provenance
+    checkpoint = str(CHECKPOINT),
+    tag        = args.tag or "",
 )
 print(f"  Saved: {out_path}")
