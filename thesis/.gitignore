@@ -1,0 +1,14 @@
+# Extracted text of the literature (regenerable)
+literature/txt/
+# LaTeX build artifacts
+latex/**/*.aux
+latex/**/*.log
+latex/**/*.out
+latex/**/*.toc
+latex/**/*.bbl
+latex/**/*.blg
+latex/**/*.bcf
+latex/**/*.run.xml
+latex/**/*.synctex.gz
+latex/**/*.fdb_latexmk
+latex/**/*.fls
